@@ -1,0 +1,289 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Jost', ui-sans-serif, system-ui, sans-serif;
+    --font-serif: 'Cormorant Garamond', Georgia, ui-serif;
+
+    --color-forest: #1E3A2A;
+    --color-forest-light: #2D5440;
+    --color-earth: #C4843C;
+    --color-earth-light: #D9A050;
+    --color-cream: #F7F2E8;
+    --color-parchment: #EDE5D0;
+    --color-moss: #4A7A5A;
+    --color-storm: #2C4D6E;
+    --color-gold: #D4A843;
+    --color-bark: #5C3D1E;
+}
+
+@layer base {
+    :root {
+        --bg-primary: #F7F2E8;
+        --bg-secondary: #EDE5D0;
+        --text-primary: #1E3A2A;
+        --text-secondary: #5C3D1E;
+        --accent: #C4843C;
+        --accent-dark: #9D6A2C;
+        --border: #D8CCAD;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: 'Jost', sans-serif;
+        font-weight: 300;
+        letter-spacing: 0.01em;
+    }
+
+    h1, h2, h3, h4 {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        line-height: 1.1;
+    }
+}
+
+@layer components {
+    .texture-bg {
+        background-image:
+            repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(30, 58, 42, 0.03) 2px,
+                rgba(30, 58, 42, 0.03) 4px
+            ),
+            repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 20px,
+                rgba(196, 132, 60, 0.04) 20px,
+                rgba(196, 132, 60, 0.04) 21px
+            );
+    }
+
+    .weave-border {
+        border-image: repeating-linear-gradient(
+            90deg,
+            #C4843C 0px,
+            #C4843C 8px,
+            #1E3A2A 8px,
+            #1E3A2A 16px,
+            #D4A843 16px,
+            #D4A843 24px,
+            #1E3A2A 24px,
+            #1E3A2A 32px
+        ) 4;
+    }
+
+    .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 2rem;
+        background-color: var(--text-primary);
+        color: var(--bg-primary);
+        font-family: 'Jost', sans-serif;
+        font-size: 0.8rem;
+        font-weight: 500;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        border: 1px solid var(--text-primary);
+        transition: all 0.25s ease;
+        cursor: pointer;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+    }
+
+    .btn-outline {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 2rem;
+        background-color: transparent;
+        color: var(--text-primary);
+        font-family: 'Jost', sans-serif;
+        font-size: 0.8rem;
+        font-weight: 500;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        border: 1px solid var(--text-primary);
+        transition: all 0.25s ease;
+        cursor: pointer;
+    }
+
+    .btn-outline:hover {
+        background-color: var(--text-primary);
+        color: var(--bg-primary);
+    }
+
+    .product-card {
+        background: transparent;
+        transition: all 0.3s ease;
+    }
+
+    .product-card:hover .product-img {
+        transform: scale(1.04);
+    }
+
+    .product-card:hover .product-add-btn {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .product-img {
+        transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .product-add-btn {
+        opacity: 0;
+        transform: translateY(8px);
+        transition: all 0.25s ease;
+    }
+
+    .nav-link {
+        font-size: 0.8rem;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-primary);
+        position: relative;
+        padding-bottom: 2px;
+    }
+
+    .nav-link::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 0;
+        height: 1px;
+        background-color: var(--accent);
+        transition: width 0.3s ease;
+    }
+
+    .nav-link:hover::after,
+    .nav-link.active::after {
+        width: 100%;
+    }
+
+    .section-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--accent);
+    }
+
+    .animate-fade-up {
+        animation: fadeUp 0.7s ease both;
+    }
+
+    .animate-fade-up-delay-1 { animation-delay: 0.1s; }
+    .animate-fade-up-delay-2 { animation-delay: 0.2s; }
+    .animate-fade-up-delay-3 { animation-delay: 0.3s; }
+    .animate-fade-up-delay-4 { animation-delay: 0.4s; }
+    .animate-fade-up-delay-5 { animation-delay: 0.5s; }
+    .animate-fade-up-delay-6 { animation-delay: 0.6s; }
+
+    @keyframes fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(24px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-reveal {
+        animation: reveal 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes reveal {
+        from {
+            opacity: 0;
+            clip-path: inset(0 100% 0 0);
+        }
+        to {
+            opacity: 1;
+            clip-path: inset(0 0% 0 0);
+        }
+    }
+
+    .druk-pattern {
+        background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231E3A2A' fill-opacity='0.06'%3E%3Cpath d='M30 0 L60 30 L30 60 L0 30 Z M30 10 L50 30 L30 50 L10 30 Z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .hero-gradient {
+        background: linear-gradient(135deg, #1E3A2A 0%, #2D5440 40%, #1E3A2A 100%);
+    }
+
+    .gold-line {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #D4A843, transparent);
+    }
+
+    .badge-organic {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.25rem 0.75rem;
+        background: rgba(30, 58, 42, 0.1);
+        border: 1px solid rgba(30, 58, 42, 0.2);
+        border-radius: 2rem;
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--text-primary);
+    }
+
+    .price-tag {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .img-placeholder {
+        background: linear-gradient(135deg, #D8CCAD 0%, #C4AA7A 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .testimonial-card {
+        border-left: 3px solid #C4843C;
+        padding-left: 1.5rem;
+    }
+
+    .footer-weave {
+        height: 4px;
+        background: repeating-linear-gradient(
+            90deg,
+            #C4843C 0px,
+            #C4843C 12px,
+            #1E3A2A 12px,
+            #1E3A2A 24px,
+            #D4A843 24px,
+            #D4A843 36px,
+            #1E3A2A 36px,
+            #1E3A2A 48px
+        );
+    }
+}
