@@ -2,35 +2,38 @@
 
 namespace App\Providers;
 
+use App\Enums\OrderStatus;
+use App\Enums\ShippingStatus;
 use App\Livewire\Admin\PaymentVerification;
+use App\Models\Order;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
-use Shopper\Core\Enum\OrderStatus;
-use Shopper\Core\Enum\ShippingStatus;
-use Shopper\Core\Models\Order;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         Livewire::component('admin.payment-verification', PaymentVerification::class);
 
-        // When an order is marked Complete, automatically mark shipping as Delivered.
         Order::updating(function (Order $order): void {
             if ($order->isDirty('status') && $order->status === OrderStatus::Completed) {
                 $order->shipping_status = ShippingStatus::Delivered;
             }
+        });
+
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Order::class, \App\Policies\OrderPolicy::class);
+
+        \Illuminate\Support\Facades\Gate::before(function ($user, string $ability) {
+            if ($user instanceof \App\Models\User && $user->hasRole('administrator')) {
+                return true;
+            }
+
+            return null;
         });
     }
 }

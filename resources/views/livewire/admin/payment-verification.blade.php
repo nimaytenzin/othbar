@@ -32,7 +32,7 @@
 
     {{-- Payment details --}}
     @php
-        $meta          = is_string($order->metadata) ? json_decode($order->metadata, true) : ($order->metadata ?? []);
+        $meta          = is_array($order->metadata) ? $order->metadata : (json_decode((string) $order->metadata, true) ?: []);
         $customerEmail = $meta['email'] ?? null;
         $couponCode    = $meta['coupon_code'] ?? null;
     @endphp
@@ -145,10 +145,11 @@
 
     {{-- Verify actions --}}
     <div class="py-4">
-        @if($order->payment_status === \Shopper\Core\Enum\PaymentStatus::Pending)
+        @if($order->payment_status === \App\Enums\PaymentStatus::Pending)
 
             @if(!$showConfirmApprove && !$showConfirmReject)
             <div class="grid grid-cols-2 gap-2">
+                @if($order->payment_proof_path)
                 <button wire:click="$set('showConfirmApprove', true)"
                         style="background:#16a34a;color:#fff;border:none;"
                         class="inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold shadow-sm transition-opacity hover:opacity-90">
@@ -157,8 +158,13 @@
                     </svg>
                     Approve
                 </button>
+                @else
+                <div class="col-span-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+                    Approve is unavailable until the customer uploads a payment screenshot.
+                </div>
+                @endif
                 <button wire:click="$set('showConfirmReject', true)"
-                        class="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-white/10 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors">
+                        class="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-white/10 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors {{ ! $order->payment_proof_path ? 'col-span-2' : '' }}">
                     <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -209,7 +215,7 @@
             </div>
             @endif
 
-        @elseif($order->payment_status === \Shopper\Core\Enum\PaymentStatus::Paid)
+        @elseif($order->payment_status === \App\Enums\PaymentStatus::Paid)
         <div class="inline-flex items-center gap-2 rounded-sm bg-green-50 dark:bg-green-900/20 px-3 py-2">
             <svg class="size-4 text-green-500 dark:text-green-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
@@ -217,7 +223,7 @@
             <span class="text-sm text-green-700 dark:text-green-400">Payment verified and approved.</span>
         </div>
 
-        @elseif($order->payment_status === \Shopper\Core\Enum\PaymentStatus::Voided)
+        @elseif($order->payment_status === \App\Enums\PaymentStatus::Voided)
         <div class="inline-flex items-center gap-2 rounded-sm bg-red-50 dark:bg-red-900/20 px-3 py-2">
             <svg class="size-4 text-red-500 dark:text-red-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd"/>

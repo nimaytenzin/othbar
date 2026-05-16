@@ -2,18 +2,19 @@
 
 namespace App\Livewire\Admin;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
+use App\Models\Order;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
-use Shopper\Core\Enum\OrderStatus;
-use Shopper\Core\Enum\PaymentStatus;
-use Shopper\Core\Models\Order;
 
 class PaymentVerification extends Component
 {
     public Order $order;
 
     public bool $showConfirmApprove = false;
-    public bool $showConfirmReject  = false;
+
+    public bool $showConfirmReject = false;
 
     public function mount(Order $order): void
     {
@@ -22,9 +23,17 @@ class PaymentVerification extends Component
 
     public function approve(): void
     {
+        if (! $this->order->payment_proof_path) {
+            return;
+        }
+
+        if ($this->order->payment_status !== PaymentStatus::Pending) {
+            return;
+        }
+
         $this->order->update([
             'payment_status' => PaymentStatus::Paid,
-            'status'         => OrderStatus::Processing,
+            'status' => OrderStatus::Processing,
         ]);
 
         $this->order->refresh();
@@ -36,9 +45,13 @@ class PaymentVerification extends Component
 
     public function reject(): void
     {
+        if ($this->order->payment_status !== PaymentStatus::Pending) {
+            return;
+        }
+
         $this->order->update([
             'payment_status' => PaymentStatus::Voided,
-            'status'         => OrderStatus::Cancelled,
+            'status' => OrderStatus::Cancelled,
         ]);
 
         $this->order->refresh();
@@ -71,8 +84,8 @@ class PaymentVerification extends Component
     public function render()
     {
         return view('livewire.admin.payment-verification', [
-            'proofUrl'    => $this->proofUrl(),
-            'proofIsImage'=> $this->proofIsImage(),
+            'proofUrl' => $this->proofUrl(),
+            'proofIsImage' => $this->proofIsImage(),
         ]);
     }
 }

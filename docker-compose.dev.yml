@@ -1,0 +1,72 @@
+# Development stack: MariaDB in Docker + optional PHP (app) and Node (vite) services.
+# Database: `mariadb` — app connects via service name (DB_HOST=mariadb, port 3306 on the Compose network).
+# Host machine reaches the same DB at localhost:${MYSQL_PUBLISH_PORT:-3307}.
+
+services:
+  mariadb:
+    image: mariadb:11
+    ports:
+      # Default 3307 avoids clash with MariaDB/MySQL already bound on the host :3306
+      - "${MYSQL_PUBLISH_PORT:-3307}:3306"
+    environment:
+      # Read from Laravel .env (Compose loads .env for substitution). Do not use DB_USERNAME=root here.
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-devroot}"
+      MYSQL_DATABASE: "${DB_DATABASE:-othbar}"
+      MYSQL_USER: "${DB_USERNAME:-othbar}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:-othbar}"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 35
+      start_period: 25s
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/dev/Dockerfile
+    image: othbar-dev:latest
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    ports:
+      - "${OTHBAR_APP_PORT:-8000}:8000"
+    volumes:
+      - .:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env
+      - docker/app.compose.env
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_URL: ""
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    # `--no-reload` is required: Laravel's ServeCommand strips most env vars from the built-in server's
+    # child process when `.env` exists (so Docker DB_HOST=mariadb would be lost and .env's 127.0.0.1 wins).
+    command: php artisan serve --host=0.0.0.0 --port=8000 --no-reload
+
+  vite:
+    image: node:22-bookworm-slim
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "${OTHBAR_VITE_PORT:-5173}:${OTHBAR_VITE_PORT:-5173}"
+    environment:
+      CHOKIDAR_USEPOLLING: "${CHOKIDAR_USEPOLLING:-false}"
+      NPM_VITE_PORT: "${OTHBAR_VITE_PORT:-5173}"
+    command:
+      - sh
+      - -c
+      - |
+          test -d node_modules || npm ci
+          exec npm run dev -- --host 0.0.0.0 --port "$$NPM_VITE_PORT"
+
+volumes:
+  mariadb_data:

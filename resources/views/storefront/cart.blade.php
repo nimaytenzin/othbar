@@ -51,7 +51,7 @@
                     <span style="font-size: 0.85rem; color: rgba(30,58,42,0.55);">Nu. {{ number_format($line->unit_price_amount / 100) }} each</span>
 
                     {{-- Quantity update form --}}
-                    <form method="POST" action="{{ route('cart.line.update', $line->id) }}" style="display: flex; align-items: center; margin-top: 1rem; gap: 0.5rem;">
+                    <form method="POST" action="{{ route('cart.line.update', $line->line_index) }}" style="display: flex; align-items: center; margin-top: 1rem; gap: 0.5rem;">
                         @csrf
                         @method('PATCH')
                         <div style="display: flex; align-items: center; border: 1px solid #D8CCAD;">
@@ -65,7 +65,7 @@
                 </div>
                 <div style="text-align: right;">
                     <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 600; color: #1E3A2A; display: block;">Nu. {{ number_format(($line->unit_price_amount * $line->quantity) / 100) }}</span>
-                    <form method="POST" action="{{ route('cart.line.remove', $line->id) }}" style="display: inline;">
+                    <form method="POST" action="{{ route('cart.line.remove', $line->line_index) }}" style="display: inline;">
                         @csrf
                         @method('DELETE')
                         <button type="submit" style="margin-top: 0.75rem; font-size: 0.72rem; color: rgba(30,58,42,0.4); background: none; border: none; cursor: pointer; text-decoration: underline; text-underline-offset: 2px;"
@@ -111,9 +111,21 @@
             </div>
             @endif
 
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-top: 1px solid #D8CCAD;">
+                <span style="font-size: 0.88rem; font-weight: 600; color: #1E3A2A;">Subtotal</span>
+                <span style="font-family: 'Cormorant Garamond', serif; font-size: 1rem; font-weight: 600; color: #1E3A2A;">Nu. {{ number_format(($subtotalMinor ?? $cartLines->sum(fn($l) => $l->unit_price_amount * $l->quantity)) / 100) }}</span>
+            </div>
+
+            @if(($discountMinor ?? 0) > 0)
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; font-size: 0.88rem; color: #1E3A2A;">
+                <span>Discount</span>
+                <span style="color: #C4843C;">− Nu. {{ number_format($discountMinor / 100) }}</span>
+            </div>
+            @endif
+
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-top: 1px solid #D8CCAD; border-bottom: 1px solid #D8CCAD; margin-bottom: 1.5rem;">
-                <span style="font-size: 1rem; font-weight: 600; color: #1E3A2A;">Subtotal</span>
-                <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.75rem; font-weight: 700; color: #1E3A2A;">Nu. {{ number_format($cartLines->sum(fn($l) => $l->unit_price_amount * $l->quantity) / 100) }}</span>
+                <span style="font-size: 1rem; font-weight: 600; color: #1E3A2A;">Total</span>
+                <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.75rem; font-weight: 700; color: #1E3A2A;">Nu. {{ number_format(($totalMinor ?? $cartLines->sum(fn($l) => $l->unit_price_amount * $l->quantity)) / 100) }}</span>
             </div>
 
             {{-- Coupon form --}}

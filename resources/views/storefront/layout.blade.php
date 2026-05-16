@@ -45,9 +45,9 @@
                 <nav style="display: flex; gap: 2rem; align-items: center;">
                     <a href="#" class="nav-link">Journal</a>
                     <a href="#contact" class="nav-link">Contact</a>
+                    <a href="{{ route('storefront.login') }}" class="nav-link">Login</a>
                     @php
-                        $navCart = \Shopper\Cart\Facades\Cart::current();
-                        $navCartCount = $navCart ? $navCart->lines()->sum('quantity') : 0;
+                        $navCartCount = collect(app(\App\Services\CartSessionService::class)->lineRows())->sum('quantity');
                     @endphp
                     <a href="{{ route('cart') }}" style="position: relative; display: flex; align-items: center; text-decoration: none; color: #1E3A2A;">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">

@@ -1,58 +1,179 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Othbar
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel application with a Filament admin panel at `/cpanel` (see `.env.example` for local URLs and admin seed defaults).
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Pushing changes to GitHub
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### First-time setup
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. Create an empty repository on GitHub (no README/license if you already have this project locally).
+2. In your project folder:
 
-## Learning Laravel
+   ```bash
+   git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
+   git branch -M main
+   git push -u origin main
+   ```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+   Use SSH instead if you prefer:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+   ```bash
+   git remote add origin git@github.com:YOUR_USERNAME/YOUR_REPO.git
+   ```
 
-## Laravel Sponsors
+### Day-to-day workflow
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+git status
+git add .
+git commit -m "Describe your change clearly."
+git push origin main
+```
 
-### Premium Partners
+Use a feature branch when appropriate:
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+git checkout -b feature/your-feature
+# ... commit work ...
+git push -u origin feature/your-feature
+```
 
-## Contributing
+Then open a pull request on GitHub.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## Creating a MySQL database in shared hosting (cPanel)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Exact labels vary slightly between hosts, but the flow is the same.
 
-## Security Vulnerabilities
+1. Log in to **cPanel**.
+2. Open **MySQL® Databases** (or **MySQL Database Wizard**).
+3. **Create a new database**  
+   Enter a name (cPanel often prefixes it with your account username, e.g. `username_othbar`).
+4. **Create a MySQL user**  
+   Choose a strong password. Note the full username cPanel shows (often prefixed).
+5. **Add the user to the database**  
+   Select the user and database, then **Add**. Grant **All Privileges** for a typical Laravel app.
+6. Note these values for `.env` on the server:
+   - **Host**: Usually `localhost`. Some hosts use `127.0.0.1` or a remote hostname shown in cPanel—use whatever they document.
+   - **Database name**: Full name including prefix.
+   - **Username**: Full username including prefix.
+   - **Password**: The one you set.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Optional: **phpMyAdmin** in cPanel can import a `.sql` dump if you are migrating data manually.
+
+---
+
+## Deploying on shared hosting (cPanel)
+
+These steps assume **PHP 8.2+**, **Composer**, and **SSH access** if possible. Many hosts offer **Terminal** or **SSH Access** in cPanel; without SSH you may need **Git™ Version Control** and manual uploads—adapt accordingly.
+
+### 1. PHP extensions
+
+Ensure extensions Laravel needs are enabled (common ones: `openssl`, `pdo_mysql`, `mbstring`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`, `fileinfo`, `intl`). Enable **PHP version** 8.2 or newer in **MultiPHP Manager** (or equivalent).
+
+### 2. Get the code onto the server
+
+**Option A — Git (recommended if available)**  
+
+In your hosting account (often above `public_html`), clone:
+
+```bash
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git othbar
+cd othbar
+```
+
+**Option B — Upload**  
+
+Upload a deployment archive or sync via FTP/SFTP. Do **not** rely on uploading `node_modules`; build assets on your machine (below) and deploy built files.
+
+### 3. Document root (important)
+
+Laravel’s web root must be the **`public`** directory, not the project root.
+
+- **Best**: Point the domain’s document root to `.../othbar/public` (many hosts let you set this in **Domains** / **Addon Domains**).
+- **Alternative**: Move only `public` contents into `public_html` and adjust `index.php` paths (only if your host forces `public_html` as doc root—see Laravel docs for the two-line bootstrap path fix).
+
+### 4. Install PHP dependencies (production)
+
+```bash
+cd /path/to/othbar
+composer install --no-dev --optimize-autoloader
+```
+
+### 5. Environment file
+
+```bash
+cp .env.example .env
+nano .env   # or use cPanel File Manager editor
+```
+
+Set at minimum:
+
+- `APP_ENV=production`
+- `APP_DEBUG=false`
+- `APP_URL=https://your-domain.com`
+- `APP_KEY=` → run `php artisan key:generate` once on the server.
+- `DB_CONNECTION=mysql`
+- `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` from the cPanel database steps above.
+
+### 6. Frontend assets
+
+Build locally (or on CI), then deploy the built files:
+
+```bash
+npm ci
+npm run build
+```
+
+Commit `public/build` if your workflow deploys from Git, or upload `public/build` after building.
+
+### 7. Database schema
+
+```bash
+php artisan migrate --force
+```
+
+Seed only if you intend to (e.g. admin user); avoid running seeders that wipe production data.
+
+### 8. Storage and caches
+
+```bash
+php artisan storage:link
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+Ensure `storage/` and `bootstrap/cache/` are writable by the web server (often `755` for directories and `644` for files; some hosts need ownership/group tweaks).
+
+### 9. Queue and cron (optional)
+
+If you use database queues, add a **cron** job in cPanel (every minute):
+
+```text
+* * * * * cd /path/to/othbar && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Consult Laravel’s scheduler and queue docs if you rely on background workers—shared hosts often only support cron-driven `schedule:run` unless they provide queue workers.
+
+### 10. HTTPS
+
+Enable **SSL/TLS** (Let’s Encrypt or provider certificate) in cPanel so `APP_URL` uses `https://`.
+
+---
+
+## Local development
+
+See `.env.example` and project scripts in `composer.json` (`setup`, `dev`). For Docker-specific notes, see `DOCKER.md` if present.
+
+---
+
+## Laravel
+
+This application is built with [Laravel](https://laravel.com). Framework documentation: [https://laravel.com/docs](https://laravel.com/docs).
 
 ## License
 

@@ -9,6 +9,8 @@ Route::get('/shop/{slug}', [StorefrontController::class, 'product'])->name('prod
 Route::get('/collections/{slug}', [StorefrontController::class, 'collection'])->name('collection');
 Route::get('/our-story', [StorefrontController::class, 'story'])->name('story');
 
+Route::get('/login', [StorefrontController::class, 'staffLogin'])->name('storefront.login');
+
 // Cart
 Route::get('/cart', [StorefrontController::class, 'cart'])->name('cart');
 Route::post('/cart/add', [StorefrontController::class, 'addToCart'])->name('cart.add');
@@ -20,4 +22,11 @@ Route::delete('/cart/{line}', [StorefrontController::class, 'removeCartLine'])->
 // Checkout
 Route::get('/checkout', [StorefrontController::class, 'checkout'])->name('checkout');
 Route::post('/checkout', [StorefrontController::class, 'placeOrder'])->name('checkout.place');
-Route::get('/checkout/confirmation/{order}', [StorefrontController::class, 'orderConfirmation'])->name('checkout.confirmation');
+Route::get('/checkout/pay/{order}/{token}', [StorefrontController::class, 'showPay'])->name('checkout.pay');
+Route::post('/checkout/pay/{order}/{token}', [StorefrontController::class, 'submitPaymentProof'])->name('checkout.pay.submit');
+Route::get('/checkout/confirmation/{order}/{token}', [StorefrontController::class, 'orderConfirmation'])->name('checkout.confirmation');
+
+Route::middleware(['auth', 'role:administrator'])->group(function (): void {
+    Route::get('/staff/orders/{order}/receipt', [\App\Http\Controllers\Admin\OrderReceiptController::class, 'show'])
+        ->name('admin.orders.receipt');
+});

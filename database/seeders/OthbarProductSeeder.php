@@ -2,29 +2,18 @@
 
 namespace Database\Seeders;
 
+use App\Enums\CouponType;
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\Collection;
+use App\Models\Coupon;
+use App\Models\Product;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
-use Shopper\Core\Enum\ProductType;
-use Shopper\Core\Models\Brand;
-use Shopper\Core\Models\Category;
-use Shopper\Core\Models\Channel;
-use Shopper\Core\Models\Currency;
-use Shopper\Core\Models\Inventory;
-use Shopper\Core\Models\Price;
-use Shopper\Core\Models\Product;
 
 class OthbarProductSeeder extends Seeder
 {
     public function run(): void
     {
-        // Get default channel and inventory
-        $channel = Channel::first();
-        $inventory = Inventory::first();
-        $currency = Currency::where('code', 'BTN')->first()
-            ?? Currency::where('code', 'USD')->first()
-            ?? Currency::first();
-
-        // Create brands (farm origins)
         $farms = [
             'Paro Valley Farm' => 'paro-valley-farm',
             'Trongsa Highland' => 'trongsa-highland',
@@ -35,13 +24,12 @@ class OthbarProductSeeder extends Seeder
 
         $brandModels = [];
         foreach ($farms as $name => $slug) {
-            $brandModels[$name] = Brand::firstOrCreate(
+            $brandModels[$name] = Brand::query()->firstOrCreate(
                 ['slug' => $slug],
                 ['name' => $name, 'is_enabled' => true]
             );
         }
 
-        // Create categories
         $categories = [
             ['name' => 'Heritage Grains', 'slug' => 'heritage-grains', 'description' => 'Ancient grain varieties cultivated in Bhutan\'s high-altitude valleys'],
             ['name' => 'Fresh Vegetables', 'slug' => 'fresh-vegetables', 'description' => 'Seasonal organic produce from our mountain farms'],
@@ -53,7 +41,7 @@ class OthbarProductSeeder extends Seeder
 
         $categoryModels = [];
         foreach ($categories as $cat) {
-            $categoryModels[$cat['slug']] = Category::firstOrCreate(
+            $categoryModels[$cat['slug']] = Category::query()->firstOrCreate(
                 ['slug' => $cat['slug']],
                 [
                     'name' => $cat['name'],
@@ -63,16 +51,30 @@ class OthbarProductSeeder extends Seeder
             );
         }
 
-        // Create products
+        $collections = [
+            ['name' => 'Valley Harvest', 'slug' => 'valley-harvest', 'description' => 'Seasonal picks from western Bhutan — red rice, highland vegetables, and small-batch preserves.'],
+            ['name' => 'Forest & Cliff', 'slug' => 'forest-cliff', 'description' => 'Wild honey, medicinal herbs, and forest aromatics gathered by Bhutanese harvesters.'],
+            ['name' => 'Staples & Spices', 'slug' => 'staples-spices', 'description' => 'Grains, noodles, ema, and timur — the everyday heart of Bhutanese cooking.'],
+        ];
+
+        $collectionModels = [];
+        foreach ($collections as $col) {
+            $collectionModels[$col['slug']] = Collection::query()->firstOrCreate(
+                ['slug' => $col['slug']],
+                ['name' => $col['name'], 'description' => $col['description']]
+            );
+        }
+
         $products = [
             [
                 'name' => 'Bhutanese Red Rice',
                 'slug' => 'bhutanese-red-rice',
                 'summary' => 'A nutritious, nutty-flavoured medium-grain rice with a distinctive reddish-brown colour, cultivated in the terraced fields of Paro Valley for over a millennium.',
                 'description' => '<p>Bhutanese Red Rice is a cultural treasure — a medium-grain rice with a beautiful deep red colour and a rich, nutty flavour. Cultivated in the traditional terraced fields of Paro Valley, it has sustained Bhutanese families for over a thousand years.</p><p>Rich in antioxidants, fibre, manganese, and magnesium, this rice retains its full bran layer, making it far more nutritious than polished white rice. The high-altitude clay soils and pure glacial water of Paro impart a subtle minerality and sweetness that cannot be replicated elsewhere.</p>',
-                'price' => 28000, // in paisa (280 Nu)
+                'price' => 28000,
                 'brand' => 'Paro Valley Farm',
                 'categories' => ['heritage-grains'],
+                'collections' => ['valley-harvest', 'staples-spices'],
                 'is_visible' => true,
             ],
             [
@@ -83,6 +85,7 @@ class OthbarProductSeeder extends Seeder
                 'price' => 65000,
                 'brand' => 'Trongsa Highland',
                 'categories' => ['wild-honey'],
+                'collections' => ['forest-cliff'],
                 'is_visible' => true,
                 'quantity' => 80,
             ],
@@ -94,6 +97,7 @@ class OthbarProductSeeder extends Seeder
                 'price' => 18000,
                 'brand' => 'Bumthang Organic',
                 'categories' => ['heritage-grains'],
+                'collections' => ['staples-spices'],
                 'is_visible' => true,
                 'quantity' => 300,
             ],
@@ -105,6 +109,7 @@ class OthbarProductSeeder extends Seeder
                 'price' => 22000,
                 'brand' => 'Othbar Community Farm',
                 'categories' => ['chili-spices'],
+                'collections' => ['staples-spices'],
                 'is_visible' => true,
                 'quantity' => 400,
             ],
@@ -116,6 +121,7 @@ class OthbarProductSeeder extends Seeder
                 'price' => 34000,
                 'brand' => 'Haa Valley Collective',
                 'categories' => ['himalayan-herbs'],
+                'collections' => ['forest-cliff'],
                 'is_visible' => true,
                 'quantity' => 150,
             ],
@@ -127,6 +133,7 @@ class OthbarProductSeeder extends Seeder
                 'price' => 19500,
                 'brand' => 'Bumthang Organic',
                 'categories' => ['heritage-grains', 'preserved-foods'],
+                'collections' => ['staples-spices', 'valley-harvest'],
                 'is_visible' => true,
                 'quantity' => 200,
             ],
@@ -138,6 +145,7 @@ class OthbarProductSeeder extends Seeder
                 'price' => 16000,
                 'brand' => 'Othbar Community Farm',
                 'categories' => ['fresh-vegetables'],
+                'collections' => ['valley-harvest'],
                 'is_visible' => true,
                 'quantity' => 100,
             ],
@@ -149,6 +157,7 @@ class OthbarProductSeeder extends Seeder
                 'price' => 29000,
                 'brand' => 'Trongsa Highland',
                 'categories' => ['chili-spices'],
+                'collections' => ['staples-spices', 'forest-cliff'],
                 'is_visible' => true,
                 'quantity' => 120,
             ],
@@ -158,37 +167,56 @@ class OthbarProductSeeder extends Seeder
             $brandName = $productData['brand'];
             $brand = $brandModels[$brandName] ?? null;
             $productCategories = $productData['categories'];
+            $productCollections = $productData['collections'] ?? [];
             $price = $productData['price'];
+            $qty = $productData['quantity'] ?? 999;
 
-            unset($productData['brand'], $productData['categories'], $productData['price'], $productData['quantity']);
+            unset($productData['brand'], $productData['categories'], $productData['collections'], $productData['price'], $productData['quantity']);
 
-            $product = Product::firstOrCreate(
+            $product = Product::query()->firstOrCreate(
                 ['slug' => $productData['slug']],
                 array_merge($productData, [
                     'brand_id' => $brand?->id,
-                    'type' => ProductType::Standard,
+                    'stock_quantity' => $qty,
+                    'allow_backorder' => false,
                     'is_visible' => true,
+                    'price_minor' => $price,
+                    'currency_code' => 'BTN',
                 ])
             );
 
-            // Attach categories
+            $catIds = [];
             foreach ($productCategories as $catSlug) {
                 if (isset($categoryModels[$catSlug])) {
-                    $product->categories()->syncWithoutDetaching([$categoryModels[$catSlug]->id]);
+                    $catIds[] = $categoryModels[$catSlug]->id;
                 }
             }
+            $product->categories()->sync($catIds);
 
-            // Create price
-            if ($currency && !$product->prices()->exists()) {
-                Price::create([
-                    'priceable_type' => Product::class,
-                    'priceable_id' => $product->id,
-                    'currency_id' => $currency->id,
-                    'amount' => $price,
-                ]);
+            $collIds = [];
+            foreach ($productCollections as $cSlug) {
+                if (isset($collectionModels[$cSlug])) {
+                    $collIds[] = $collectionModels[$cSlug]->id;
+                }
             }
+            $product->collections()->sync($collIds);
         }
 
-        $this->command->info('Othbar products seeded successfully!');
+        Coupon::query()->firstOrCreate(
+            ['code' => 'WELCOME10'],
+            [
+                'type' => CouponType::Percent,
+                'value' => 10,
+                'starts_at' => now()->subDay(),
+                'ends_at' => null,
+                'max_uses' => null,
+                'uses_count' => 0,
+                'is_active' => true,
+            ]
+        );
+
+        if ($this->command !== null) {
+            $this->command->info('Othbar products, collections, and sample coupon seeded successfully!');
+        }
     }
 }

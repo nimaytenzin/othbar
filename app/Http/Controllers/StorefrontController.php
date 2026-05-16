@@ -2,43 +2,42 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
+use App\Exceptions\InvalidCouponException;
+use App\Models\Category;
+use App\Models\Collection;
+use App\Models\Order;
+use App\Models\OrderAddress;
+use App\Models\OrderItem;
+use App\Models\Product;
+use App\Services\CartSessionService;
 use Illuminate\Http\Request;
-use Shopper\Cart\CartManager;
-use Shopper\Cart\Exceptions\InvalidDiscountException;
-use Shopper\Cart\Exceptions\InsufficientStockException;
-use Shopper\Cart\Facades\Cart;
-use Shopper\Core\Enum\OrderStatus;
-use Shopper\Core\Enum\PaymentStatus;
-use Shopper\Core\Models\Category;
-use Shopper\Core\Models\Collection;
-use Shopper\Core\Models\Order;
-use Shopper\Core\Models\OrderAddress;
-use Shopper\Core\Models\OrderItem;
-use Shopper\Core\Models\Product;
+use Illuminate\Support\Str;
 
 class StorefrontController extends Controller
 {
     public function home()
     {
-        $featuredProducts = Product::with(['prices', 'media'])
+        $featuredProducts = Product::query()->with(['media', 'brand'])
             ->where('is_visible', true)
             ->latest()
             ->take(6)
             ->get();
 
-        $categories = Category::whereNull('parent_id')
+        $categories = Category::query()->whereNull('parent_id')
             ->withCount('products')
             ->take(6)
             ->get();
 
-        $collections = Collection::take(3)->get();
+        $collections = Collection::query()->take(3)->get();
 
         return view('storefront.home', compact('featuredProducts', 'categories', 'collections'));
     }
 
     public function shop(Request $request)
     {
-        $query = Product::with(['prices', 'media', 'categories'])
+        $query = Product::query()->with(['media', 'categories', 'brand'])
             ->where('is_visible', true);
 
         if ($request->filled('category')) {
@@ -50,19 +49,19 @@ class StorefrontController extends Controller
         }
 
         $products = $query->latest()->paginate(12);
-        $categories = Category::whereNull('parent_id')->get();
+        $categories = Category::query()->whereNull('parent_id')->get();
 
         return view('storefront.shop', compact('products', 'categories'));
     }
 
     public function product(string $slug)
     {
-        $product = Product::with(['prices', 'media', 'categories'])
+        $product = Product::query()->with(['media', 'categories', 'brand'])
             ->where('slug', $slug)
             ->where('is_visible', true)
             ->firstOrFail();
 
-        $related = Product::with(['prices', 'media'])
+        $related = Product::query()->with(['media', 'brand'])
             ->where('is_visible', true)
             ->where('id', '!=', $product->id)
             ->take(4)
@@ -73,8 +72,8 @@ class StorefrontController extends Controller
 
     public function collection(string $slug)
     {
-        $collection = Collection::where('slug', $slug)->firstOrFail();
-        $products = Product::with(['prices', 'media'])
+        $collection = Collection::query()->where('slug', $slug)->firstOrFail();
+        $products = Product::query()->with(['media', 'brand'])
             ->where('is_visible', true)
             ->latest()
             ->paginate(12);
@@ -82,86 +81,85 @@ class StorefrontController extends Controller
         return view('storefront.collection', compact('collection', 'products'));
     }
 
-    public function cart()
+    public function cart(CartSessionService $cartService)
     {
-        $cart = Cart::current();
-        $cartLines = $cart ? $cart->lines()->with('purchasable')->get() : collect([]);
+        $cart = $cartService->cartViewModel();
+        $cartLines = $cartService->linesWithProducts();
+        $subtotalMinor = $cartService->subtotalMinor();
+        $discountMinor = $cartService->discountMinor();
+        $totalMinor = $cartService->totalMinor();
 
-        return view('storefront.cart', compact('cart', 'cartLines'));
+        return view('storefront.cart', compact('cart', 'cartLines', 'subtotalMinor', 'discountMinor', 'totalMinor'));
     }
 
-    public function addToCart(Request $request, CartManager $cartManager)
+    public function addToCart(Request $request, CartSessionService $cartService)
     {
         $request->validate([
             'product_id' => 'required|integer',
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $product = Product::findOrFail($request->product_id);
+        $product = Product::query()->findOrFail($request->product_id);
 
         if (! $product->allow_backorder && ! $product->inStock((int) $request->quantity)) {
             $stock = $product->stock;
             $msg = $stock > 0
                 ? "Only {$stock} left in stock. Please reduce the quantity."
                 : 'This product is currently out of stock.';
+
             return back()->with('error', $msg)->withInput();
         }
 
-        $cart = Cart::current() ?? Cart::create();
+        $cartService->addProduct($product, (int) $request->quantity);
 
-        try {
-            $cartManager->add($cart, $product, (int) $request->quantity);
-        } catch (InsufficientStockException $e) {
-            $stock = $product->stock;
-            $msg = $stock > 0
-                ? "Only {$stock} in stock. Reduce quantity to add to basket."
-                : 'This product is currently out of stock.';
-            return back()->with('error', $msg)->withInput();
-        }
-
-        return redirect()->route('cart')->with('success', $product->name . ' added to basket!');
+        return redirect()->route('cart')->with('success', $product->name.' added to basket!');
     }
 
-    public function updateCartLine(Request $request, int $line, CartManager $cartManager)
+    public function updateCartLine(Request $request, int $line, CartSessionService $cartService)
     {
         $request->validate(['quantity' => 'required|integer|min:1']);
 
-        $cart = Cart::current();
-        if (! $cart) {
-            return redirect()->route('cart')->with('error', 'Cart not found.');
+        $lines = $cartService->lineRows();
+        if (! isset($lines[$line])) {
+            return redirect()->route('cart')->with('error', 'Cart line not found.');
+        }
+        $row = $lines[$line];
+        $product = Product::query()->find($row['product_id']);
+        if (! $product) {
+            return redirect()->route('cart')->with('error', 'Product no longer available.');
+        }
+        if (! $product->allow_backorder && (int) $request->quantity > $product->stock) {
+            $stock = $product->stock;
+            $msg = $stock > 0
+                ? "Only {$stock} in stock. Reduce quantity to update your basket."
+                : 'This product is currently out of stock.';
+
+            return redirect()->route('cart')->with('error', $msg);
         }
 
-        try {
-            $cartManager->update($cart, $line, ['quantity' => (int) $request->quantity]);
-        } catch (\Exception $e) {
-            return redirect()->route('cart')->with('error', $e->getMessage());
-        }
+        $cartService->updateLineQuantity($line, (int) $request->quantity);
 
         return redirect()->route('cart');
     }
 
-    public function removeCartLine(int $line, CartManager $cartManager)
+    public function removeCartLine(int $line, CartSessionService $cartService)
     {
-        $cart = Cart::current();
-        if ($cart) {
-            $cartManager->remove($cart, $line);
-        }
+        $cartService->removeLine($line);
 
         return redirect()->route('cart')->with('success', 'Item removed from basket.');
     }
 
-    public function applyCoupon(Request $request, CartManager $cartManager)
+    public function applyCoupon(Request $request, CartSessionService $cartService)
     {
         $request->validate(['coupon_code' => 'required|string|max:50']);
 
-        $cart = Cart::current();
-        if (! $cart) {
-            return redirect()->route('cart')->with('coupon_error', 'Cart not found.');
+        if ($cartService->lineRows() === []) {
+            return redirect()->route('cart')->with('coupon_error', 'Cart is empty.');
         }
 
         try {
-            $cartManager->applyCoupon($cart, strtoupper(trim($request->coupon_code)));
-        } catch (InvalidDiscountException $e) {
+            $cartService->applyCouponCode(strtoupper(trim($request->coupon_code)));
+        } catch (InvalidCouponException $e) {
             return redirect()->route('cart')->with('coupon_error', $e->getMessage());
         } catch (\Exception $e) {
             return redirect()->route('cart')->with('coupon_error', 'Invalid or expired coupon code.');
@@ -170,127 +168,199 @@ class StorefrontController extends Controller
         return redirect()->route('cart')->with('success', 'Coupon applied!');
     }
 
-    public function removeCoupon(CartManager $cartManager)
+    public function removeCoupon(CartSessionService $cartService)
     {
-        $cart = Cart::current();
-        if ($cart) {
-            $cartManager->removeCoupon($cart);
-        }
+        $cartService->removeCoupon();
 
         return redirect()->route('cart')->with('success', 'Coupon removed.');
     }
 
-    public function checkout()
+    public function checkout(CartSessionService $cartService)
     {
-        $cart = Cart::current();
-        $cartLines = $cart ? $cart->lines()->with('purchasable')->get() : collect([]);
-
+        $cartLines = $cartService->linesWithProducts();
         if ($cartLines->isEmpty()) {
             return redirect()->route('cart')->with('error', 'Your basket is empty.');
         }
 
-        return view('storefront.checkout', compact('cart', 'cartLines'));
+        $cart = $cartService->cartViewModel();
+        $subtotalMinor = $cartService->subtotalMinor();
+        $discountMinor = $cartService->discountMinor();
+        $totalMinor = $cartService->totalMinor();
+
+        return view('storefront.checkout', compact('cart', 'cartLines', 'subtotalMinor', 'discountMinor', 'totalMinor'));
     }
 
-    public function placeOrder(Request $request, CartManager $cartManager)
+    public function placeOrder(Request $request, CartSessionService $cartService)
     {
-        $request->validate([
-            'first_name'       => 'required|string|max:100',
-            'last_name'        => 'required|string|max:100',
-            'phone'            => 'required|string|max:30',
-            'email'            => 'nullable|email|max:150',
-            'street_address'   => 'required|string|max:255',
-            'city'             => 'required|string|max:100',
-            'postal_code'      => 'required|string|max:20',
-            'notes'            => 'nullable|string|max:1000',
-            'payment_proof'    => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-            'payment_reference'=> 'nullable|string|max:100',
-        ], [
-            'payment_proof.mimes' => 'Payment proof must be a JPG, PNG, or PDF file.',
-            'payment_proof.max'   => 'Payment proof file must be under 5 MB.',
-        ]);
+        $rules = [
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'phone' => 'required|string|max:30',
+            'email' => 'nullable|email|max:150',
+            'notes' => 'nullable|string|max:1000',
+            'fulfillment_method' => 'required|in:delivery,pickup',
+        ];
 
-        // Require either proof screenshot or reference number
-        if (! $request->hasFile('payment_proof') && ! $request->filled('payment_reference')) {
-            return back()->withErrors([
-                'payment_proof' => 'Please upload your payment screenshot or enter the transaction reference number.',
-            ])->withInput();
+        if ($request->input('fulfillment_method') === 'delivery') {
+            $rules['street_address'] = 'required|string|max:255';
+            $rules['city'] = 'required|string|max:100';
+            $rules['postal_code'] = 'required|string|max:20';
         }
 
-        $cart = Cart::current();
-        if (! $cart) {
-            return redirect()->route('cart')->with('error', 'Your basket is empty.');
-        }
+        $request->validate($rules);
 
-        $cartLines = $cart->lines()->with('purchasable')->get();
+        $cartLines = $cartService->linesWithProducts();
         if ($cartLines->isEmpty()) {
             return redirect()->route('cart')->with('error', 'Your basket is empty.');
         }
 
-        // Handle payment proof upload
-        $proofPath = null;
-        if ($request->hasFile('payment_proof')) {
-            $proofPath = $request->file('payment_proof')->store('payment-proofs', 'public');
-        }
+        $fulfillmentMethod = $request->input('fulfillment_method');
 
-        $subtotal = $cartLines->sum(fn ($l) => (int) round($l->unit_price_amount * 100) * $l->quantity);
+        $streetAddress = $fulfillmentMethod === 'pickup'
+            ? config('payments.pickup_address_label')
+            : $request->street_address;
+        $city = $fulfillmentMethod === 'pickup'
+            ? 'Thimphu'
+            : $request->city;
+        $postalCode = $fulfillmentMethod === 'pickup'
+            ? 'N/A'
+            : $request->postal_code;
 
-        $order = Order::create([
-            'number'            => 'OTH-' . strtoupper(substr(uniqid(), -6)),
-            'price_amount'      => $subtotal,
-            'currency_code'     => $cart->currency_code ?? 'BTN',
-            'status'            => OrderStatus::New,
-            'payment_status'    => PaymentStatus::Pending,
-            'notes'             => $request->notes,
-            'payment_proof_path'=> $proofPath,
-            'payment_reference' => $request->payment_reference,
-            'metadata'          => json_encode([
-                'email'          => $request->email,
+        $payToken = Str::random(48);
+        $totalMinor = $cartService->totalMinor();
+        $coupon = $cartService->resolvedCoupon();
+
+        $order = Order::query()->create([
+            'number' => 'OTH-'.strtoupper(substr(uniqid(), -6)),
+            'total_minor' => $totalMinor,
+            'currency_code' => 'BTN',
+            'status' => OrderStatus::New,
+            'payment_status' => PaymentStatus::Pending,
+            'notes' => $request->notes,
+            'payment_proof_path' => null,
+            'payment_reference' => null,
+            'payment_access_token' => $payToken,
+            'fulfillment_method' => $fulfillmentMethod,
+            'metadata' => [
+                'email' => $request->email,
                 'payment_method' => 'bank-transfer',
-                'coupon_code'    => $cart->coupon_code,
-            ]),
+                'coupon_code' => $cartService->couponCode(),
+                'source' => 'storefront',
+                'fulfillment_method' => $fulfillmentMethod,
+            ],
         ]);
 
-        $address = OrderAddress::create([
-            'first_name'     => $request->first_name,
-            'last_name'      => $request->last_name,
-            'street_address' => $request->street_address,
-            'city'           => $request->city,
-            'postal_code'    => $request->postal_code,
-            'phone'          => $request->phone,
-            'country_name'   => 'Bhutan',
+        $address = OrderAddress::query()->create([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'street_address' => $streetAddress,
+            'city' => $city,
+            'postal_code' => $postalCode,
+            'phone' => $request->phone,
+            'country_name' => 'Bhutan',
         ]);
 
         $order->update(['shipping_address_id' => $address->id]);
 
-        foreach ($cartLines as $line) {
-            OrderItem::create([
-                'order_id'          => $order->id,
-                'name'              => $line->purchasable->name ?? 'Product',
-                'quantity'          => $line->quantity,
-                'unit_price_amount' => $line->unit_price_amount,
-                'sku'               => $line->purchasable->sku ?? '',
-                'product_id'        => $line->purchasable_id,
-                'product_type'      => $line->purchasable_type,
+        foreach ($cartLines as $item) {
+            $p = $item->purchasable;
+            if (! $p) {
+                return redirect()->route('cart')->with('error', 'A product in your basket is no longer available.');
+            }
+            OrderItem::query()->create([
+                'order_id' => $order->id,
+                'name' => $p->name,
+                'quantity' => $item->quantity,
+                'unit_price_minor' => $item->unit_price_amount,
+                'sku' => $p->sku ?? '',
+                'product_id' => $p->id,
             ]);
         }
 
-        $cartManager->clear($cart);
-        $cart->update(['completed_at' => now()]);
-        Cart::forget();
+        if ($coupon && $cartService->couponApplies($coupon)) {
+            $coupon->increment('uses_count');
+        }
 
-        return redirect()->route('checkout.confirmation', $order->id);
+        $cartService->clear();
+
+        return redirect()->route('checkout.pay', [
+            'order' => $order->id,
+            'token' => $payToken,
+        ]);
     }
 
-    public function orderConfirmation(int $order)
+    public function showPay(int $order, string $token)
     {
-        $order = Order::with('items')->findOrFail($order);
+        $order = Order::query()->with(['items', 'shippingAddress'])->findOrFail($order);
+        $this->assertPayToken($order, $token);
 
-        return view('storefront.confirmation', compact('order'));
+        if ($order->payment_proof_path) {
+            return redirect()->route('checkout.confirmation', [
+                'order' => $order->id,
+                'token' => $token,
+            ]);
+        }
+
+        $paymentChannels = array_values(config('payments.channels', []));
+        $totalNu = $order->total_minor / 100;
+
+        return view('storefront.pay', [
+            'order' => $order,
+            'token' => $token,
+            'paymentChannels' => $paymentChannels,
+            'totalNu' => $totalNu,
+        ]);
+    }
+
+    public function submitPaymentProof(Request $request, int $order, string $token)
+    {
+        $order = Order::query()->findOrFail($order);
+        $this->assertPayToken($order, $token);
+
+        $request->validate([
+            'payment_proof' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ], [
+            'payment_proof.required' => 'Please upload a screenshot of your payment confirmation.',
+            'payment_proof.mimes' => 'Payment proof must be a JPG, PNG, or PDF file.',
+            'payment_proof.max' => 'Payment proof file must be under 5 MB.',
+        ]);
+
+        $proofPath = $request->file('payment_proof')->store('payment-proofs', 'public');
+
+        $order->update([
+            'payment_proof_path' => $proofPath,
+        ]);
+
+        return redirect()->route('checkout.confirmation', [
+            'order' => $order->id,
+            'token' => $token,
+        ]);
+    }
+
+    public function orderConfirmation(int $order, string $token)
+    {
+        $order = Order::query()->with('items')->findOrFail($order);
+        $this->assertPayToken($order, $token);
+
+        return view('storefront.confirmation', compact('order', 'token'));
+    }
+
+    public function staffLogin()
+    {
+        return view('storefront.staff-login', [
+            'adminLoginUrl' => url('/cpanel/login'),
+        ]);
     }
 
     public function story()
     {
         return view('storefront.story');
+    }
+
+    private function assertPayToken(Order $order, string $token): void
+    {
+        if (! $order->payment_access_token || ! hash_equals((string) $order->payment_access_token, $token)) {
+            abort(404);
+        }
     }
 }
