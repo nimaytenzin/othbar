@@ -27,9 +27,15 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('cpanel')
             ->login()
+            ->brandName('Othbar')
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#1E3A2A'),
+                'gray' => Color::Zinc,
+                'success' => Color::hex('#2D5440'),
+                'warning' => Color::hex('#C4843C'),
             ])
+            ->font('Jost')
+            ->sidebarCollapsibleOnDesktop()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

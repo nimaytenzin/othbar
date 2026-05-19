@@ -43,6 +43,7 @@ services:
       DB_HOST: mariadb
       DB_PORT: "3306"
       DB_URL: ""
+      APP_URL: "http://localhost:${OTHBAR_APP_PORT:-8000}"
     depends_on:
       mariadb:
         condition: service_healthy

@@ -10,6 +10,11 @@ class ViewProduct extends ViewRecord
 {
     protected static string $resource = ProductResource::class;
 
+    protected function resolveRecord(int | string $key): \Illuminate\Database\Eloquent\Model
+    {
+        return parent::resolveRecord($key)->load('media');
+    }
+
     protected function getHeaderActions(): array
     {
         return [

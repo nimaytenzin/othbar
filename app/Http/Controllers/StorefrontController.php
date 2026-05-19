@@ -10,6 +10,7 @@ use App\Models\Collection;
 use App\Models\Order;
 use App\Models\OrderAddress;
 use App\Models\OrderItem;
+use App\Models\JournalPost;
 use App\Models\Product;
 use App\Services\CartSessionService;
 use Illuminate\Http\Request;
@@ -355,6 +356,33 @@ class StorefrontController extends Controller
     public function story()
     {
         return view('storefront.story');
+    }
+
+    public function journal()
+    {
+        $posts = JournalPost::query()
+            ->published()
+            ->latest('published_at')
+            ->paginate(9);
+
+        return view('storefront.journal.index', compact('posts'));
+    }
+
+    public function journalShow(string $slug)
+    {
+        $post = JournalPost::query()
+            ->published()
+            ->where('slug', $slug)
+            ->firstOrFail();
+
+        $recentPosts = JournalPost::query()
+            ->published()
+            ->where('id', '!=', $post->id)
+            ->latest('published_at')
+            ->take(3)
+            ->get();
+
+        return view('storefront.journal.show', compact('post', 'recentPosts'));
     }
 
     private function assertPayToken(Order $order, string $token): void

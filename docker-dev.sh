@@ -113,6 +113,9 @@ echo "Removing Laravel config cache if present (required so the app container us
 rm -f "${ROOT}/bootstrap/cache/config.php"
 run_app app php artisan config:clear
 
+echo "Ensuring public storage symlink exists..."
+run_app app php artisan storage:link 2>/dev/null || true
+
 echo ""
 echo "Starting stack (Ctrl+C stops). MariaDB runs in Docker; the app container uses DB_HOST=mariadb."
 echo "  App:     http://localhost:${OTHBAR_APP_PORT}"

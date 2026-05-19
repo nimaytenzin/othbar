@@ -6,8 +6,8 @@
 
 {{-- Breadcrumb --}}
 <div style="background: #EDE5D0; border-bottom: 1px solid #D8CCAD; padding: 0.875rem 0;">
-    <div style="max-width: 1280px; margin: 0 auto; padding: 0 2rem;">
-        <nav style="display: flex; gap: 0.5rem; align-items: center; font-size: 0.75rem; color: rgba(30,58,42,0.5);">
+    <div class="sf-container">
+        <nav class="sf-breadcrumb" style="font-size: 0.75rem; color: rgba(30,58,42,0.5);">
             <a href="{{ route('home') }}" style="color: rgba(30,58,42,0.5); text-decoration: none;">Home</a>
             <span>/</span>
             <a href="{{ route('shop') }}" style="color: rgba(30,58,42,0.5); text-decoration: none;">Shop</a>
@@ -18,27 +18,17 @@
 </div>
 
 {{-- Product section --}}
-<div style="max-width: 1280px; margin: 0 auto; padding: 4rem 2rem;">
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6rem; align-items: start;">
+<div class="sf-container sf-page-body">
+    <div class="sf-grid-2col">
 
         {{-- Product images --}}
+        @isset($product)
+        @php $gallery = $product->galleryImageUrls(); @endphp
+        @endisset
         <div>
-            <div style="aspect-ratio: 1; background: #D8CCAD; position: relative; overflow: hidden; margin-bottom: 1rem;">
+            <div id="product-main-image" class="product-image-frame product-image-frame--square" style="margin-bottom: 1rem;">
                 @isset($product)
-                    @if($product->getFirstMediaUrl('thumbnail'))
-                    <img src="{{ $product->getFirstMediaUrl('thumbnail') }}" alt="{{ $product->name }}" style="width: 100%; height: 100%; object-fit: cover;">
-                    @elseif($product->getFirstMediaUrl('uploads'))
-                    <img src="{{ $product->getFirstMediaUrl('uploads') }}" alt="{{ $product->name }}" style="width: 100%; height: 100%; object-fit: cover;">
-                    @else
-                    <div class="img-placeholder" style="width: 100%; height: 100%;">
-                        <svg width="80" height="110" viewBox="0 0 80 110" fill="none" opacity="0.2">
-                            <path d="M40 105 C40 105 5 80 5 50 C5 20 40 5 40 5 C40 5 75 20 75 50 C75 80 40 105 40 105Z" stroke="#1E3A2A" stroke-width="1.5" fill="none"/>
-                            <path d="M40 105 L40 5" stroke="#1E3A2A" stroke-width="1"/>
-                            <path d="M40 30 Q20 42 16 62" stroke="#1E3A2A" stroke-width="0.8"/>
-                            <path d="M40 55 Q62 63 66 82" stroke="#1E3A2A" stroke-width="0.8"/>
-                        </svg>
-                    </div>
-                    @endif
+                    <x-product-image :product="$product" />
                 @else
                 <div class="img-placeholder" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1rem;">
                     <svg width="80" height="110" viewBox="0 0 80 110" fill="none" opacity="0.3">
@@ -57,14 +47,41 @@
                 </div>
             </div>
 
-            {{-- Thumbnail row --}}
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;">
-                @for($i = 0; $i < 4; $i++)
-                <div style="aspect-ratio: 1; background: #D8CCAD; cursor: pointer; border: 2px solid {{ $i === 0 ? '#1E3A2A' : 'transparent' }}; transition: border-color 0.2s;" onmouseover="this.style.borderColor='#C4843C'" onmouseout="this.style.borderColor='{{ $i === 0 ? '#1E3A2A' : 'transparent' }}'">
-                    <div class="img-placeholder" style="width: 100%; height: 100%;"></div>
-                </div>
-                @endfor
+            @isset($product)
+            @if(count($gallery) > 1)
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 0.75rem;">
+                @foreach($gallery as $index => $imageUrl)
+                <button
+                    type="button"
+                    class="product-gallery-thumb product-gallery-thumb__btn"
+                    data-image-url="{{ $imageUrl }}"
+                    style="border-color: {{ $index === 0 ? '#1E3A2A' : 'transparent' }};"
+                    aria-label="View product image {{ $index + 1 }}"
+                >
+                    <img src="{{ $imageUrl }}" alt="" class="product-img">
+                </button>
+                @endforeach
             </div>
+            @endif
+            @endisset
+
+            @isset($product)
+            @if(count($gallery ?? []) > 1)
+            <script>
+                document.querySelectorAll('.product-gallery-thumb').forEach(function (thumb) {
+                    thumb.addEventListener('click', function () {
+                        var main = document.querySelector('#product-main-image img');
+                        if (!main) return;
+                        main.src = thumb.dataset.imageUrl;
+                        document.querySelectorAll('.product-gallery-thumb').forEach(function (t) {
+                            t.style.borderColor = 'transparent';
+                        });
+                        thumb.style.borderColor = '#1E3A2A';
+                    });
+                });
+            </script>
+            @endif
+            @endisset
         </div>
 
         {{-- Product info --}}
@@ -142,7 +159,7 @@
                     @csrf
                     <input type="hidden" name="product_id" value="{{ $product->id }}">
                     <p style="font-size: 0.72rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: #1E3A2A; margin-bottom: 0.875rem;">Quantity</p>
-                    <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div class="sf-qty-row">
                         <div style="display: flex; align-items: center; border: 1px solid #D8CCAD; {{ !$inStock ? 'opacity:0.5;' : '' }}">
                             <button type="button" {{ !$inStock ? 'disabled' : '' }} style="padding: 0.75rem 1rem; background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #1E3A2A;" onclick="const q=document.getElementById('qty');q.value=Math.max(1,parseInt(q.value)-1)">−</button>
                             <input id="qty" name="quantity" type="number" value="1" min="1" {{ !$product->allow_backorder && $product->stock > 0 ? 'max="'.$product->stock.'"' : '' }} style="width: 50px; text-align: center; border: none; background: none; font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: #1E3A2A; outline: none;" {{ !$inStock ? 'disabled' : '' }}>
@@ -162,7 +179,7 @@
                 </form>
                 @else
                 <p style="font-size: 0.72rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: #1E3A2A; margin-bottom: 0.875rem;">Quantity</p>
-                <div style="display: flex; gap: 1rem; align-items: center;">
+                <div class="sf-qty-row">
                     <div style="display: flex; align-items: center; border: 1px solid #D8CCAD;">
                         <button style="padding: 0.75rem 1rem; background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #1E3A2A;" onclick="const q=document.getElementById('qty');q.value=Math.max(1,parseInt(q.value)-1)">−</button>
                         <input id="qty" type="number" value="1" min="1" style="width: 50px; text-align: center; border: none; background: none; font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: #1E3A2A; outline: none;">
@@ -179,7 +196,7 @@
             <div class="gold-line" style="margin-bottom: 2rem;"></div>
 
             {{-- Product attributes --}}
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+            <div class="sf-grid-2" style="margin-bottom: 2rem;">
                 @foreach([
                     ['label' => 'Certification', 'value' => 'Bhutan Organic #BT-2019'],
                     ['label' => 'Farm', 'value' => 'Othbar Community Farm'],
@@ -215,7 +232,7 @@
 
 {{-- Full description --}}
 <div style="background: #EDE5D0; padding: 5rem 0;">
-    <div style="max-width: 1280px; margin: 0 auto; padding: 0 2rem;">
+    <div class="sf-container">
         <div style="max-width: 700px; margin: 0 auto;">
             <p class="section-label" style="text-align: center; margin-bottom: 0.5rem;">The full story</p>
             <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; color: #1E3A2A; text-align: center; margin-bottom: 2.5rem;">
@@ -241,17 +258,13 @@
         <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 2rem; color: #1E3A2A;">You may also like</h2>
         <a href="{{ route('shop') }}" style="font-size: 0.78rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #C4843C; text-decoration: none; border-bottom: 1px solid #C4843C; padding-bottom: 2px;">View all</a>
     </div>
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem;">
+    <div class="sf-grid-4">
         @isset($related)
             @foreach($related->take(4) as $rel)
             <div class="product-card">
                 <a href="{{ route('product', $rel->slug) }}" style="text-decoration: none; display: block;">
-                    <div style="aspect-ratio: 1; background: #D8CCAD; margin-bottom: 1rem; overflow: hidden;">
-                        @if($rel->getFirstMedia())
-                        <img src="{{ $rel->getFirstMedia()->getUrl() }}" alt="{{ $rel->name }}" class="product-img" style="width: 100%; height: 100%; object-fit: cover;">
-                        @else
-                        <div class="img-placeholder" style="width: 100%; height: 100%;"></div>
-                        @endif
+                    <div class="product-image-frame product-image-frame--square" style="margin-bottom: 1rem;">
+                        <x-product-image :product="$rel" />
                     </div>
                     <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; color: #1E3A2A; margin-bottom: 0.35rem;">{{ $rel->name }}</h3>
                     @if($rel->prices->first())

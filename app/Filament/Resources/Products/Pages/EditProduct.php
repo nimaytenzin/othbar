@@ -11,6 +11,14 @@ class EditProduct extends EditRecord
 {
     protected static string $resource = ProductResource::class;
 
+    protected function afterSave(): void
+    {
+        $this->form->model($this->getRecord())->saveRelationships();
+
+        $this->record = $this->getRecord()->refresh();
+        $this->record->load('media');
+    }
+
     protected function getHeaderActions(): array
     {
         return [

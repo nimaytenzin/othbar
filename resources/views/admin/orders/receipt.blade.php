@@ -9,10 +9,17 @@
         body {
             font-family: ui-sans-serif, system-ui, sans-serif;
             color: #1a2e22;
+            width: 100%;
             max-width: 420px;
             margin: 0 auto;
-            padding: 1.5rem;
+            padding: 1rem;
             font-size: 13px;
+        }
+
+        @media (min-width: 480px) {
+            body {
+                padding: 1.5rem;
+            }
         }
         h1 {
             font-size: 1.25rem;

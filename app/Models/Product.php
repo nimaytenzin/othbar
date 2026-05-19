@@ -62,8 +62,38 @@ class Product extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('uploads');
-        $this->addMediaCollection('thumbnail');
+        $this->addMediaCollection('thumbnail')
+            ->singleFile()
+            ->useDisk('public');
+
+        $this->addMediaCollection('uploads')
+            ->useDisk('public');
+    }
+
+    public function featuredImageUrl(): ?string
+    {
+        $url = $this->getFirstMediaUrl('thumbnail') ?: $this->getFirstMediaUrl('uploads');
+
+        return $url !== '' ? $url : null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function galleryImageUrls(): array
+    {
+        $urls = collect();
+
+        $thumbnail = $this->getFirstMedia('thumbnail');
+        if ($thumbnail) {
+            $urls->push($thumbnail->getUrl());
+        }
+
+        foreach ($this->getMedia('uploads') as $media) {
+            $urls->push($media->getUrl());
+        }
+
+        return $urls->unique()->values()->all();
     }
 
     public function inStock(int $quantity): bool

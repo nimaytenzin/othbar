@@ -4,14 +4,14 @@
 
 @section('content')
 
-<div style="background: #EDE5D0; border-bottom: 1px solid #D8CCAD; padding: 4rem 0 3rem;">
-    <div style="max-width: 1280px; margin: 0 auto; padding: 0 2rem;">
+<div class="sf-page-header" style="background: #EDE5D0; border-bottom: 1px solid #D8CCAD;">
+    <div class="sf-container">
         <p class="section-label">Staff</p>
         <h1 style="font-family: 'Cormorant Garamond', serif; font-size: clamp(2rem, 4vw, 3rem); color: #1E3A2A; margin-top: 0.5rem;">Store administration</h1>
     </div>
 </div>
 
-<div style="max-width: 560px; margin: 0 auto; padding: 4rem 2rem 6rem;">
+<div class="sf-container" style="max-width: 560px; padding-top: 2.5rem; padding-bottom: 4rem;">
     <div style="background: #F7F2E8; border: 1px solid #D8CCAD; padding: 2.5rem;">
         <p style="font-size: 0.92rem; color: rgba(30,58,42,0.75); line-height: 1.75; margin: 0 0 2rem;">
             Manage orders, products, and payment verification in the Othbar admin. Use the button below to open the secure sign-in page.

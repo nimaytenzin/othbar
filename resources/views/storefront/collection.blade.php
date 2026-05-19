@@ -4,9 +4,9 @@
 
 @section('content')
 
-<div style="background: #1E3A2A; padding: 5rem 0; position: relative; overflow: hidden;">
+<div class="sf-page-header" style="background: #1E3A2A; padding: 3rem 0; position: relative; overflow: hidden;">
     <div class="druk-pattern" style="position: absolute; inset: 0; opacity: 0.3;"></div>
-    <div style="max-width: 1280px; margin: 0 auto; padding: 0 2rem; position: relative;">
+    <div class="sf-container" style="position: relative;">
         <p class="section-label" style="color: #D4A843; margin-bottom: 0.75rem;">Curated collection</p>
         <h1 style="font-family: 'Cormorant Garamond', serif; font-size: clamp(2.5rem, 5vw, 4.5rem); color: #F7F2E8; font-weight: 600;">
             {{ isset($collection) ? $collection->name : 'Collection' }}
@@ -19,7 +19,7 @@
     </div>
 </div>
 
-<div style="max-width: 1280px; margin: 0 auto; padding: 4rem 2rem;">
+<div class="sf-container sf-page-body">
     @if($products->isEmpty())
     <div style="text-align: center; padding: 6rem 0;">
         <p style="font-family: 'Cormorant Garamond', serif; font-size: 2rem; color: rgba(30,58,42,0.3);">Products coming soon</p>
@@ -30,12 +30,8 @@
         @foreach($products as $product)
         <div class="product-card animate-fade-up animate-fade-up-delay-{{ min($loop->index + 1, 6) }}">
             <a href="{{ route('product', $product->slug) }}" style="text-decoration: none; display: block;">
-                <div style="position: relative; overflow: hidden; aspect-ratio: 3/4; background: #D8CCAD; margin-bottom: 1rem;">
-                    @if($product->getFirstMedia())
-                    <img src="{{ $product->getFirstMedia()->getUrl() }}" alt="{{ $product->name }}" class="product-img" style="width: 100%; height: 100%; object-fit: cover;">
-                    @else
-                    <div class="img-placeholder" style="width: 100%; height: 100%;"></div>
-                    @endif
+                <div class="product-image-frame" style="margin-bottom: 1rem;">
+                    <x-product-image :product="$product" />
                     <button class="product-add-btn" style="position: absolute; bottom: 0.75rem; left: 0.75rem; right: 0.75rem; padding: 0.625rem; background: #1E3A2A; color: #F7F2E8; border: none; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;">
                         Add to basket
                     </button>

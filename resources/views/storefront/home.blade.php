@@ -5,10 +5,10 @@
 @section('content')
 
 {{-- Hero Section --}}
-<section class="hero-gradient druk-pattern" style="position: relative; overflow: hidden; min-height: 88vh; display: flex; align-items: center;">
+<section class="hero-gradient druk-pattern sf-hero">
 
     {{-- Decorative botanical SVG --}}
-    <div style="position: absolute; right: -4rem; top: -4rem; opacity: 0.08; pointer-events: none;">
+    <div class="sf-hide-mobile" style="position: absolute; right: -4rem; top: -4rem; opacity: 0.08; pointer-events: none;">
         <svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="300" cy="300" r="280" stroke="#F7F2E8" stroke-width="0.5"/>
             <circle cx="300" cy="300" r="240" stroke="#F7F2E8" stroke-width="0.5"/>
@@ -25,7 +25,7 @@
     </div>
 
     {{-- Decorative leaf motif left --}}
-    <div style="position: absolute; left: 3rem; bottom: 3rem; opacity: 0.12; pointer-events: none;">
+    <div class="sf-hide-mobile" style="position: absolute; left: 1rem; bottom: 2rem; opacity: 0.12; pointer-events: none;">
         <svg width="200" height="300" viewBox="0 0 200 300" fill="none">
             <path d="M100 280 C100 280 20 200 20 120 C20 50 100 20 100 20 C100 20 180 50 180 120 C180 200 100 280 100 280Z" stroke="#F7F2E8" stroke-width="1" fill="rgba(247,242,232,0.1)"/>
             <path d="M100 280 L100 20" stroke="#F7F2E8" stroke-width="0.8"/>
@@ -35,33 +35,33 @@
         </svg>
     </div>
 
-    <div style="max-width: 1280px; margin: 0 auto; padding: 6rem 2rem; width: 100%;">
+    <div class="sf-container sf-hero__inner">
         <div style="max-width: 640px;">
 
             <div class="animate-fade-up" style="margin-bottom: 2rem;">
                 <span class="badge-organic" style="background: rgba(212,168,67,0.15); border-color: rgba(212,168,67,0.3); color: #D4A843;">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 4a6 6 0 110 12A6 6 0 0112 6z" opacity="0.5"/><path d="M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
-                    Est. 2018 &bull; Certified Organic &bull; Punakha, Bhutan
+                    {{ $site->hero_badge }}
                 </span>
             </div>
 
             <h1 class="animate-fade-up animate-fade-up-delay-1" style="font-family: 'Cormorant Garamond', serif; font-size: clamp(3rem, 6vw, 5.5rem); font-weight: 600; color: #F7F2E8; line-height: 1.0; margin-bottom: 1.5rem;">
-                From the<br>
-                <em style="color: #D4A843; font-style: italic;">Dragon Kingdom's</em><br>
-                own earth
+                {{ $site->hero_line1 }}<br>
+                <em style="color: #D4A843; font-style: italic;">{{ $site->hero_emphasis }}</em><br>
+                {{ $site->hero_line2 }}
             </h1>
 
             <p class="animate-fade-up animate-fade-up-delay-2" style="font-size: 1.05rem; color: rgba(247,242,232,0.75); line-height: 1.9; margin-bottom: 2.5rem; max-width: 480px; font-weight: 300;">
-                High-altitude organic farming practiced with Gross National Happiness at its core. Every harvest carries the spirit of Bhutan's pristine valleys.
+                {{ $site->hero_description }}
             </p>
 
             <div class="animate-fade-up animate-fade-up-delay-3" style="display: flex; gap: 1rem; flex-wrap: wrap;">
                 <a href="{{ route('shop') }}" class="btn-primary" style="background: #C4843C; border-color: #C4843C; color: white;">
-                    Explore the Harvest
+                    {{ $site->hero_cta_primary }}
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
                 </a>
                 <a href="{{ route('story') }}" class="btn-outline" style="border-color: rgba(247,242,232,0.4); color: #F7F2E8;">
-                    Our Story
+                    {{ $site->hero_cta_secondary }}
                 </a>
             </div>
 
@@ -77,16 +77,9 @@
 
 {{-- Provenance strip --}}
 <section style="background: #EDE5D0; border-top: 1px solid #D8CCAD; border-bottom: 1px solid #D8CCAD; padding: 2rem 0; overflow: hidden;">
-    <div style="max-width: 1280px; margin: 0 auto; padding: 0 2rem;">
-        <div style="display: flex; align-items: center; gap: 3rem; overflow-x: auto; white-space: nowrap; scrollbar-width: none;">
-            @foreach([
-                ['icon' => '🏔', 'text' => 'Grown at 2,400m'],
-                ['icon' => '🌱', 'text' => 'Zero Pesticides'],
-                ['icon' => '🌿', 'text' => 'Heirloom Varieties'],
-                ['icon' => '♻', 'text' => 'Carbon Neutral'],
-                ['icon' => '🤝', 'text' => 'Community Owned'],
-                ['icon' => '🧡', 'text' => 'GNH Certified'],
-            ] as $item)
+    <div class="sf-container">
+        <div class="sf-provenance-strip">
+            @foreach($site->provenance_items ?? [] as $item)
             <div style="display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0;">
                 <span style="font-size: 1.25rem;">{{ $item['icon'] }}</span>
                 <span style="font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #1E3A2A;">{{ $item['text'] }}</span>
@@ -100,17 +93,17 @@
 </section>
 
 {{-- Categories Grid --}}
-<section style="max-width: 1280px; margin: 0 auto; padding: 6rem 2rem;">
+<section class="sf-container sf-container--section">
     <div style="margin-bottom: 3rem;">
-        <p class="section-label animate-fade-up">What we grow</p>
+        <p class="section-label animate-fade-up">{{ $site->home_categories_label }}</p>
         <h2 class="animate-fade-up animate-fade-up-delay-1" style="font-family: 'Cormorant Garamond', serif; font-size: clamp(2rem, 4vw, 3.2rem); color: #1E3A2A; margin-top: 0.5rem;">
-            Categories of the harvest
+            {{ $site->home_categories_title }}
         </h2>
     </div>
 
     @if($categories->isEmpty())
     {{-- Static category display if no DB data yet --}}
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
+    <div class="sf-grid-3">
         @foreach([
             ['name' => 'Heritage Grains', 'desc' => 'Red rice, buckwheat, millet', 'color' => '#8B6914', 'bg' => '#F0E4C8'],
             ['name' => 'Fresh Vegetables', 'desc' => 'Seasonal highland produce', 'color' => '#1E3A2A', 'bg' => '#D4E6D8'],
@@ -134,7 +127,7 @@
         @endforeach
     </div>
     @else
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem;">
+    <div class="sf-grid-auto">
         @foreach($categories as $category)
         <a href="{{ route('shop') }}?category={{ $category->slug }}"
            style="text-decoration: none; display: block; padding: 2rem; background: #EDE5D0; border: 1px solid #D8CCAD; transition: all 0.3s ease;"
@@ -149,14 +142,14 @@
 </section>
 
 {{-- Featured Products --}}
-<section style="background: #EDE5D0; padding: 6rem 0;">
-    <div style="max-width: 1280px; margin: 0 auto; padding: 0 2rem;">
+<section class="sf-band" style="background: #EDE5D0;">
+    <div class="sf-container">
 
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem;">
+        <div class="sf-flex-between" style="margin-bottom: 3rem;">
             <div>
-                <p class="section-label">Latest harvest</p>
+                <p class="section-label">{{ $site->home_featured_label }}</p>
                 <h2 style="font-family: 'Cormorant Garamond', serif; font-size: clamp(2rem, 4vw, 3.2rem); color: #1E3A2A; margin-top: 0.5rem;">
-                    Featured products
+                    {{ $site->home_featured_title }}
                 </h2>
             </div>
             <a href="{{ route('shop') }}" style="font-size: 0.78rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #C4843C; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid #C4843C; padding-bottom: 2px;">
@@ -167,7 +160,7 @@
 
         @if($featuredProducts->isEmpty())
         {{-- Static product grid for demo --}}
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;">
+        <div class="sf-grid-products">
             @foreach([
                 ['name' => 'Bhutanese Red Rice', 'origin' => 'Paro Valley', 'price' => 'Nu. 280', 'weight' => '1 kg', 'tag' => 'Heritage Grain'],
                 ['name' => 'Wild Forest Honey', 'origin' => 'Trongsa District', 'price' => 'Nu. 650', 'weight' => '500 ml', 'tag' => 'Wild-Harvested'],
@@ -198,16 +191,12 @@
             @endforeach
         </div>
         @else
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem;">
+        <div class="sf-grid-products">
             @foreach($featuredProducts as $product)
             <div class="product-card animate-fade-up animate-fade-up-delay-{{ min($loop->index + 1, 6) }}">
                 <a href="{{ route('product', $product->slug) }}" style="text-decoration: none; display: block;">
-                    <div style="position: relative; overflow: hidden; aspect-ratio: 4/5; background: #DAE0BF; margin-bottom: 1.25rem;">
-                        @if($product->getFirstMediaUrl('thumbnail'))
-                        <img src="{{ $product->getFirstMediaUrl('thumbnail') }}" alt="{{ $product->name }}" class="product-img" style="width: 100%; height: 100%; object-fit: cover;">
-                        @elseif($product->getFirstMediaUrl('uploads'))
-                        <img src="{{ $product->getFirstMediaUrl('uploads') }}" alt="{{ $product->name }}" class="product-img" style="width: 100%; height: 100%; object-fit: cover;">
-                        @endif
+                    <div class="product-image-frame product-image-frame--4x5" style="margin-bottom: 1.25rem;">
+                        <x-product-image :product="$product" />
                     </div>
                     <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; color: #1E3A2A; margin-bottom: 0.5rem;">{{ $product->name }}</h3>
                     @if($product->prices->first())
@@ -223,19 +212,19 @@
 </section>
 
 {{-- Story/Mission Section --}}
-<section id="farms" style="max-width: 1280px; margin: 0 auto; padding: 7rem 2rem;">
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6rem; align-items: center;">
+<section id="farms" class="sf-container sf-container--section">
+    <div class="sf-grid-2col">
 
         <div>
-            <p class="section-label animate-fade-up">The Othbar way</p>
+            <p class="section-label animate-fade-up">{{ $site->home_story_label }}</p>
             <h2 class="animate-fade-up animate-fade-up-delay-1" style="font-family: 'Cormorant Garamond', serif; font-size: clamp(2rem, 3.5vw, 3rem); color: #1E3A2A; margin-top: 0.5rem; margin-bottom: 1.5rem;">
-                Farming guided by <em style="color: #C4843C;">Gross National Happiness</em>
+                {{ $site->home_story_title }}
             </h2>
             <p class="animate-fade-up animate-fade-up-delay-2" style="font-size: 0.95rem; line-height: 2; color: rgba(30,58,42,0.7); margin-bottom: 1.5rem;">
-                In the verdant valleys of Punakha, our farmers cultivate with a philosophy rooted in Bhutan's unique vision — that happiness and ecological balance are inseparable. No chemical inputs. No shortcuts.
+                {{ $site->home_story_paragraph_1 }}
             </p>
             <p class="animate-fade-up animate-fade-up-delay-3" style="font-size: 0.95rem; line-height: 2; color: rgba(30,58,42,0.7); margin-bottom: 2rem;">
-                We grow heirloom varieties that have fed Bhutanese families for centuries — red rice from Paro, buckwheat from Bumthang, wild cliff honey collected by traditional hunters in Trongsa.
+                {{ $site->home_story_paragraph_2 }}
             </p>
             <a href="{{ route('story') }}" class="btn-primary animate-fade-up animate-fade-up-delay-4" style="text-decoration: none;">
                 Read our full story
@@ -243,7 +232,7 @@
             </a>
         </div>
 
-        <div style="position: relative;">
+        <div class="sf-offset-accent">
             {{-- Large image placeholder with artistic treatment --}}
             <div style="aspect-ratio: 4/5; background: linear-gradient(135deg, #2D5440 0%, #1E3A2A 100%); position: relative; overflow: hidden;">
                 <div class="druk-pattern" style="position: absolute; inset: 0; opacity: 0.3;"></div>
@@ -256,15 +245,15 @@
                         <path d="M60 110 Q35 118 28 135" stroke="#F7F2E8" stroke-width="0.6"/>
                     </svg>
                     <div style="text-align: center;">
-                        <p style="font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; color: rgba(247,242,232,0.9); font-style: italic;">Punakha Valley</p>
-                        <p style="font-size: 0.7rem; letter-spacing: 0.2em; color: rgba(247,242,232,0.4); text-transform: uppercase; margin-top: 0.5rem;">2,400 metres above sea level</p>
+                        <p style="font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; color: rgba(247,242,232,0.9); font-style: italic;">{{ $site->home_story_media_title }}</p>
+                        <p style="font-size: 0.7rem; letter-spacing: 0.2em; color: rgba(247,242,232,0.4); text-transform: uppercase; margin-top: 0.5rem;">{{ $site->home_story_media_subtitle }}</p>
                     </div>
                 </div>
             </div>
             {{-- Offset accent box --}}
-            <div style="position: absolute; bottom: -2rem; right: -2rem; background: #C4843C; padding: 1.5rem 2rem; z-index: 10;">
-                <p style="font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; font-weight: 700; color: white; line-height: 1;">6+</p>
-                <p style="font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.8); margin-top: 0.25rem;">Years of<br>cultivation</p>
+            <div class="sf-offset-accent__box" style="background: #C4843C; padding: 1.5rem 2rem; z-index: 10;">
+                <p style="font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; font-weight: 700; color: white; line-height: 1;">{{ $site->home_story_stat_value }}</p>
+                <p style="font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.8); margin-top: 0.25rem;">{!! nl2br(e($site->home_story_stat_label)) !!}</p>
             </div>
         </div>
 
@@ -272,19 +261,14 @@
 </section>
 
 {{-- Stats row --}}
-<section style="background: #1E3A2A; padding: 4rem 0;">
-    <div style="max-width: 1280px; margin: 0 auto; padding: 0 2rem;">
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; text-align: center;">
-            @foreach([
-                ['num' => '47', 'unit' => 'Farmer families', 'desc' => 'community owners'],
-                ['num' => '120', 'unit' => 'Acres', 'desc' => 'of certified organic land'],
-                ['num' => '28', 'unit' => 'Varieties', 'desc' => 'of heirloom crops'],
-                ['num' => '100%', 'unit' => 'Organic', 'desc' => 'zero synthetic inputs'],
-            ] as $stat)
+<section class="sf-band" style="background: #1E3A2A;">
+    <div class="sf-container">
+        <div class="sf-stats-grid">
+            @foreach($site->stats ?? [] as $stat)
             <div>
-                <p style="font-family: 'Cormorant Garamond', serif; font-size: 3.5rem; font-weight: 700; color: #D4A843; line-height: 1;">{{ $stat['num'] }}</p>
-                <p style="font-size: 0.85rem; font-weight: 600; color: #F7F2E8; margin-top: 0.5rem; letter-spacing: 0.05em;">{{ $stat['unit'] }}</p>
-                <p style="font-size: 0.72rem; color: rgba(247,242,232,0.4); margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.1em;">{{ $stat['desc'] }}</p>
+                <p class="sf-stat-num">{{ $stat['value'] ?? '' }}</p>
+                <p style="font-size: 0.85rem; font-weight: 600; color: #F7F2E8; margin-top: 0.5rem; letter-spacing: 0.05em;">{{ $stat['unit'] ?? '' }}</p>
+                <p style="font-size: 0.72rem; color: rgba(247,242,232,0.4); margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.1em;">{{ $stat['description'] ?? '' }}</p>
             </div>
             @endforeach
         </div>
@@ -292,27 +276,23 @@
 </section>
 
 {{-- Testimonials --}}
-<section style="max-width: 1280px; margin: 0 auto; padding: 7rem 2rem;">
+<section class="sf-container sf-container--section">
     <div style="margin-bottom: 3rem; text-align: center;">
-        <p class="section-label">What people say</p>
+        <p class="section-label">{{ $site->home_testimonials_label }}</p>
         <h2 style="font-family: 'Cormorant Garamond', serif; font-size: clamp(2rem, 4vw, 3.2rem); color: #1E3A2A; margin-top: 0.5rem;">
-            From our customers
+            {{ $site->home_testimonials_title }}
         </h2>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3rem;">
-        @foreach([
-            ['text' => 'The red rice from Othbar has completely transformed our family meals. You can taste the difference — nutty, complex, and deeply satisfying. Nothing like what you find in supermarkets.', 'name' => 'Karma Wangchuk', 'location' => 'Thimphu'],
-            ['text' => 'Their wild honey is extraordinary. I have tried honey from across Asia, but the depth of flavour from the Trongsa cliff honey is unlike anything I have experienced. A true treasure of Bhutan.', 'name' => 'Dr. Tshering Pem', 'location' => 'Paro'],
-            ['text' => 'Ordering from Othbar feels like a direct connection to the land. The packaging is beautiful, the produce is impeccable, and knowing the farmers are part of the cooperative makes it meaningful.', 'name' => 'Sonam Dorji', 'location' => 'Punakha'],
-        ] as $testimonial)
+    <div class="sf-grid-3">
+        @foreach($site->testimonials ?? [] as $testimonial)
         <div class="testimonial-card">
             <div style="margin-bottom: 1rem;">
-                @for ($i = 0; $i < 5; $i++)
+                @for ($i = 0; $i < ($testimonial['rating'] ?? 5); $i++)
                 <span style="color: #D4A843; font-size: 0.85rem;">&#9733;</span>
                 @endfor
             </div>
-            <p style="font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; line-height: 1.8; color: #1E3A2A; font-style: italic; margin-bottom: 1.25rem;">"{{ $testimonial['text'] }}"</p>
+            <p style="font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; line-height: 1.8; color: #1E3A2A; font-style: italic; margin-bottom: 1.25rem;">"{{ $testimonial['quote'] ?? '' }}"</p>
             <div>
                 <p style="font-size: 0.85rem; font-weight: 600; color: #1E3A2A;">{{ $testimonial['name'] }}</p>
                 <p style="font-size: 0.75rem; color: #C4843C; letter-spacing: 0.08em;">{{ $testimonial['location'] }}</p>
@@ -323,17 +303,17 @@
 </section>
 
 {{-- Newsletter --}}
-<section style="background: linear-gradient(135deg, #2D5440, #1E3A2A); padding: 6rem 0; position: relative; overflow: hidden;">
+<section class="sf-band" style="background: linear-gradient(135deg, #2D5440, #1E3A2A); position: relative; overflow: hidden;">
     <div class="druk-pattern" style="position: absolute; inset: 0; opacity: 0.4;"></div>
-    <div style="max-width: 580px; margin: 0 auto; padding: 0 2rem; text-align: center; position: relative;">
-        <p class="section-label" style="color: #D4A843;">Stay connected</p>
-        <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; color: #F7F2E8; margin-top: 0.5rem; margin-bottom: 1rem;">
-            Seasonal harvest updates
+    <div class="sf-container" style="max-width: 580px; text-align: center; position: relative;">
+        <p class="section-label" style="color: #D4A843;">{{ $site->newsletter_label }}</p>
+        <h2 style="font-family: 'Cormorant Garamond', serif; font-size: clamp(1.75rem, 5vw, 2.5rem); color: #F7F2E8; margin-top: 0.5rem; margin-bottom: 1rem;">
+            {{ $site->newsletter_title }}
         </h2>
         <p style="font-size: 0.9rem; color: rgba(247,242,232,0.65); line-height: 1.8; margin-bottom: 2.5rem;">
-            Be the first to know when new products arrive, learn about our farming practices, and receive exclusive offers.
+            {{ $site->newsletter_description }}
         </p>
-        <form style="display: flex; gap: 0; max-width: 420px; margin: 0 auto;">
+        <form class="sf-newsletter-form">
             <input type="email" placeholder="your@email.com" style="flex: 1; padding: 0.875rem 1.25rem; background: rgba(247,242,232,0.1); border: 1px solid rgba(247,242,232,0.2); border-right: none; color: #F7F2E8; font-family: 'Jost', sans-serif; font-size: 0.9rem; outline: none;" />
             <button type="submit" style="padding: 0.875rem 1.5rem; background: #C4843C; border: 1px solid #C4843C; color: white; font-family: 'Jost', sans-serif; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; white-space: nowrap;">
                 Subscribe

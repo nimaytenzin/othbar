@@ -4,14 +4,14 @@
 
 @section('content')
 
-<div style="background: #EDE5D0; border-bottom: 1px solid #D8CCAD; padding: 4rem 0 3rem;">
-    <div style="max-width: 1280px; margin: 0 auto; padding: 0 2rem;">
+<div class="sf-page-header" style="background: #EDE5D0; border-bottom: 1px solid #D8CCAD;">
+    <div class="sf-container">
         <p class="section-label">Almost there</p>
         <h1 style="font-family: 'Cormorant Garamond', serif; font-size: clamp(2.5rem, 5vw, 4rem); color: #1E3A2A; margin-top: 0.5rem;">Checkout</h1>
     </div>
 </div>
 
-<div style="max-width: 1280px; margin: 0 auto; padding: 4rem 2rem;">
+<div class="sf-container sf-page-body">
 
     @if($errors->any())
     <div style="background: #F8D7DA; border: 1px solid #F5C6CB; color: #721C24; padding: 0.875rem 1.25rem; margin-bottom: 2rem; font-size: 0.875rem; border-radius: 0;">
@@ -26,7 +26,7 @@
     <form method="POST" action="{{ route('checkout.place') }}">
         @csrf
         @php($fulfillment = old('fulfillment_method', 'delivery'))
-        <div style="display: grid; grid-template-columns: 1fr 400px; gap: 4rem; align-items: start;">
+        <div class="sf-grid-split--wide">
 
             {{-- Left column --}}
             <div>
@@ -34,7 +34,7 @@
                 {{-- ── Delivery details ── --}}
                 <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 1.75rem; color: #1E3A2A; margin-bottom: 2rem;">1. Contact &amp; fulfillment</h2>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                <div class="sf-form-grid-2" style="margin-bottom: 1.25rem;">
                     <div>
                         <label style="display: block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: #1E3A2A; margin-bottom: 0.5rem;">First name *</label>
                         <input type="text" name="first_name" value="{{ old('first_name') }}" required
@@ -49,7 +49,7 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                <div class="sf-form-grid-2" style="margin-bottom: 1.25rem;">
                     <div>
                         <label style="display: block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: #1E3A2A; margin-bottom: 0.5rem;">Phone *</label>
                         <input type="tel" name="phone" value="{{ old('phone') }}" required placeholder="+975 17 123 456"
@@ -86,7 +86,7 @@
                         onfocus="this.style.borderColor='#1E3A2A'" onblur="this.style.borderColor='#D8CCAD'">
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                <div class="sf-form-grid-2" style="margin-bottom: 1.25rem;">
                     <div>
                         <label style="display: block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: #1E3A2A; margin-bottom: 0.5rem;">City / Dzongkhag *</label>
                         <input type="text" name="city" id="checkout_city" value="{{ old('city', 'Thimphu') }}" {{ $fulfillment === 'delivery' ? 'required' : '' }} {{ $fulfillment === 'pickup' ? 'disabled' : '' }}
@@ -119,7 +119,7 @@
             </div>
 
             {{-- ── Right: Order summary ── --}}
-            <div style="background: #EDE5D0; padding: 2rem; border: 1px solid #D8CCAD; position: sticky; top: 100px;">
+            <div class="sf-sticky-summary" style="background: #EDE5D0; padding: 2rem; border: 1px solid #D8CCAD;">
                 <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: #1E3A2A; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #D8CCAD;">Your order</h2>
 
                 <div style="margin-bottom: 1.25rem;">

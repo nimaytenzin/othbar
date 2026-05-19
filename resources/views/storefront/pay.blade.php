@@ -4,14 +4,14 @@
 
 @section('content')
 
-<div style="background: #EDE5D0; border-bottom: 1px solid #D8CCAD; padding: 4rem 0 3rem;">
-    <div style="max-width: 1280px; margin: 0 auto; padding: 0 2rem;">
+<div class="sf-page-header" style="background: #EDE5D0; border-bottom: 1px solid #D8CCAD;">
+    <div class="sf-container">
         <p class="section-label">Payment</p>
         <h1 style="font-family: 'Cormorant Garamond', serif; font-size: clamp(2.5rem, 5vw, 4rem); color: #1E3A2A; margin-top: 0.5rem;">Complete your payment</h1>
     </div>
 </div>
 
-<div style="max-width: 1280px; margin: 0 auto; padding: 4rem 2rem;">
+<div class="sf-container sf-page-body">
 
     @if($errors->any())
     <div style="background: #F8D7DA; border: 1px solid #F5C6CB; color: #721C24; padding: 0.875rem 1.25rem; margin-bottom: 2rem; font-size: 0.875rem;">
@@ -23,7 +23,7 @@
     </div>
     @endif
 
-    <div style="display: grid; grid-template-columns: 1fr 380px; gap: 3rem; align-items: start;">
+    <div class="sf-grid-split">
 
         <div>
             <div style="background: #F7F2E8; border: 1px solid #D8CCAD; padding: 2rem; margin-bottom: 2rem;">
@@ -49,7 +49,7 @@
                 @foreach($paymentChannels as $i => $ch)
                 @php($qrFull = public_path($ch['qr_public_path']))
                 <div id="pay-bank-{{ $ch['id'] }}" class="pay-bank-panel" style="{{ $i > 0 ? 'display:none' : '' }}">
-                    <div style="display: grid; grid-template-columns: 1fr 160px; gap: 2rem; align-items: start;">
+                    <div class="sf-pay-bank-grid">
                         <div>
                             <div style="margin-bottom: 1rem;">
                                 <p style="font-size: 0.65rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(30,58,42,0.45); margin-bottom: 0.3rem;">Bank</p>
@@ -107,13 +107,13 @@
                     </label>
                 </div>
 
-                <button type="submit" class="btn-primary" style="margin-top: 1.5rem; width: 100%; max-width: 320px; display: inline-flex; justify-content: center; border: none; cursor: pointer; font-size: 0.85rem; box-sizing: border-box;">
+                <button type="submit" class="btn-primary" style="margin-top: 1.5rem; width: 100%; display: flex; justify-content: center; border: none; cursor: pointer; font-size: 0.85rem; box-sizing: border-box;">
                     Submit payment proof
                 </button>
             </form>
         </div>
 
-        <div style="background: #EDE5D0; padding: 2rem; border: 1px solid #D8CCAD; position: sticky; top: 100px;">
+        <div class="sf-sticky-summary" style="background: #EDE5D0; padding: 2rem; border: 1px solid #D8CCAD;">
             <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; color: #1E3A2A; margin-bottom: 1rem;">Order summary</h3>
             @foreach($order->items as $item)
             <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(216,204,173,0.5); font-size: 0.85rem;">

@@ -4,14 +4,14 @@
 
 @section('content')
 
-<div style="background: #EDE5D0; border-bottom: 1px solid #D8CCAD; padding: 4rem 0 3rem;">
-    <div style="max-width: 1280px; margin: 0 auto; padding: 0 2rem;">
+<div class="sf-page-header" style="background: #EDE5D0; border-bottom: 1px solid #D8CCAD;">
+    <div class="sf-container">
         <p class="section-label">Your selections</p>
         <h1 style="font-family: 'Cormorant Garamond', serif; font-size: clamp(2.5rem, 5vw, 4rem); color: #1E3A2A; margin-top: 0.5rem;">Your basket</h1>
     </div>
 </div>
 
-<div style="max-width: 1280px; margin: 0 auto; padding: 4rem 2rem;">
+<div class="sf-container sf-page-body">
 
     {{-- Flash messages --}}
     @if(session('success'))
@@ -33,17 +33,15 @@
         </a>
     </div>
     @else
-    <div style="display: grid; grid-template-columns: 1fr 380px; gap: 4rem; align-items: start;">
+    <div class="sf-grid-split">
 
         {{-- Cart items --}}
         <div>
             @foreach($cartLines as $line)
-            <div style="display: grid; grid-template-columns: 100px 1fr auto; gap: 1.5rem; padding: 1.75rem 0; border-bottom: 1px solid #D8CCAD; align-items: center;">
-                <div style="aspect-ratio: 1; background: #D8CCAD; overflow: hidden;">
-                    @if($line->purchasable && $line->purchasable->getFirstMediaUrl('thumbnail'))
-                    <img src="{{ $line->purchasable->getFirstMediaUrl('thumbnail') }}" alt="{{ $line->purchasable->name }}" style="width: 100%; height: 100%; object-fit: cover;">
-                    @else
-                    <div class="img-placeholder" style="width: 100%; height: 100%;"></div>
+            <div class="sf-cart-line" style="padding: 1.75rem 0; border-bottom: 1px solid #D8CCAD;">
+                <div class="product-image-frame product-image-frame--square">
+                    @if($line->purchasable)
+                    <x-product-image :product="$line->purchasable" />
                     @endif
                 </div>
                 <div>
@@ -63,7 +61,7 @@
                         </div>
                     </form>
                 </div>
-                <div style="text-align: right;">
+                <div class="sf-cart-line__price">
                     <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 600; color: #1E3A2A; display: block;">Nu. {{ number_format(($line->unit_price_amount * $line->quantity) / 100) }}</span>
                     <form method="POST" action="{{ route('cart.line.remove', $line->line_index) }}" style="display: inline;">
                         @csrf
@@ -84,7 +82,7 @@
         </div>
 
         {{-- Order summary --}}
-        <div style="background: #EDE5D0; padding: 2rem; border: 1px solid #D8CCAD; position: sticky; top: 100px;">
+        <div class="sf-sticky-summary" style="background: #EDE5D0; padding: 2rem; border: 1px solid #D8CCAD;">
             <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: #1E3A2A; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #D8CCAD;">Order summary</h2>
 
             {{-- Line items summary --}}

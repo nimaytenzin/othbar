@@ -5,19 +5,19 @@
 @section('content')
 
 {{-- Page header --}}
-<div style="background: #EDE5D0; border-bottom: 1px solid #D8CCAD; padding: 4rem 0 3rem;">
-    <div style="max-width: 1280px; margin: 0 auto; padding: 0 2rem;">
+<div class="sf-page-header" style="background: #EDE5D0; border-bottom: 1px solid #D8CCAD;">
+    <div class="sf-container">
         <p class="section-label">The full harvest</p>
         <h1 style="font-family: 'Cormorant Garamond', serif; font-size: clamp(2.5rem, 5vw, 4rem); color: #1E3A2A; margin-top: 0.5rem;">All products</h1>
     </div>
 </div>
 
-<div style="max-width: 1280px; margin: 0 auto; padding: 3rem 2rem;">
-    <div style="display: grid; grid-template-columns: 240px 1fr; gap: 4rem; align-items: start;">
+<div class="sf-container sf-page-body" style="padding-top: 3rem; padding-bottom: 3rem;">
+    <div class="sf-shop-layout">
 
         {{-- Sidebar filters --}}
         <aside>
-            <div style="position: sticky; top: 100px;">
+            <div class="sf-shop-sidebar">
 
                 {{-- Search --}}
                 <div style="margin-bottom: 2.5rem;">
@@ -73,7 +73,7 @@
         <div>
 
             {{-- Sort/count bar --}}
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #D8CCAD;">
+            <div class="sf-flex-between--center" style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #D8CCAD;">
                 <p style="font-size: 0.82rem; color: rgba(30,58,42,0.5);">
                     @if($products->total() > 0)
                         Showing {{ $products->firstItem() }}–{{ $products->lastItem() }} of {{ $products->total() }} products
@@ -91,7 +91,7 @@
 
             @if($products->isEmpty())
             {{-- Static demo products --}}
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;">
+            <div class="sf-grid-products">
                 @foreach([
                     ['name' => 'Bhutanese Red Rice', 'origin' => 'Paro Valley', 'price' => 'Nu. 280', 'weight' => '1 kg', 'tag' => 'Heritage Grain', 'slug' => 'bhutanese-red-rice'],
                     ['name' => 'Wild Forest Honey', 'origin' => 'Trongsa District', 'price' => 'Nu. 650', 'weight' => '500 ml', 'tag' => 'Wild-Harvested', 'slug' => 'wild-forest-honey'],
@@ -124,7 +124,7 @@
                 @endforeach
             </div>
             @else
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;">
+            <div class="sf-grid-products">
                 @foreach($products as $product)
                 @php
                     $inStock = $product->allow_backorder || $product->stock > 0;
@@ -132,12 +132,8 @@
                 @endphp
                 <div class="product-card">
                     <a href="{{ route('product', $product->slug) }}" style="text-decoration: none; display: block;">
-                        <div style="position: relative; overflow: hidden; aspect-ratio: 3/4; background: #DAE0BF; margin-bottom: 1rem;">
-                            @if($product->getFirstMediaUrl('thumbnail'))
-                            <img src="{{ $product->getFirstMediaUrl('thumbnail') }}" alt="{{ $product->name }}" class="product-img" style="width: 100%; height: 100%; object-fit: cover;">
-                            @elseif($product->getFirstMediaUrl('uploads'))
-                            <img src="{{ $product->getFirstMediaUrl('uploads') }}" alt="{{ $product->name }}" class="product-img" style="width: 100%; height: 100%; object-fit: cover;">
-                            @endif
+                        <div class="product-image-frame" style="margin-bottom: 1rem;">
+                            <x-product-image :product="$product" />
                             {{-- Out of stock overlay --}}
                             @if(!$inStock)
                             <div style="position: absolute; inset: 0; background: rgba(247,242,232,0.7); display: flex; align-items: center; justify-content: center;">

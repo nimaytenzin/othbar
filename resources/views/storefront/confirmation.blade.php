@@ -4,14 +4,14 @@
 
 @section('content')
 
-<div style="background: #EDE5D0; border-bottom: 1px solid #D8CCAD; padding: 4rem 0 3rem;">
-    <div style="max-width: 1280px; margin: 0 auto; padding: 0 2rem;">
+<div class="sf-page-header" style="background: #EDE5D0; border-bottom: 1px solid #D8CCAD;">
+    <div class="sf-container">
         <p class="section-label">Thank you</p>
         <h1 style="font-family: 'Cormorant Garamond', serif; font-size: clamp(2.5rem, 5vw, 4rem); color: #1E3A2A; margin-top: 0.5rem;">Order confirmed</h1>
     </div>
 </div>
 
-<div style="max-width: 700px; margin: 0 auto; padding: 5rem 2rem; text-align: center;">
+<div class="sf-container" style="max-width: 700px; padding-top: 3rem; padding-bottom: 3rem; text-align: center;">
 
     <div style="width: 72px; height: 72px; background: #1E3A2A; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem;">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#D4A843" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
