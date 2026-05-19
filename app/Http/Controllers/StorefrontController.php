@@ -7,14 +7,18 @@ use App\Enums\PaymentStatus;
 use App\Exceptions\InvalidCouponException;
 use App\Models\Category;
 use App\Models\Collection;
+use App\Models\JournalPost;
 use App\Models\Order;
 use App\Models\OrderAddress;
 use App\Models\OrderItem;
-use App\Models\JournalPost;
 use App\Models\Product;
+use App\Models\SiteSetting;
 use App\Services\CartSessionService;
+use App\Support\PaymentChannels;
+use App\Support\PaymentMethods;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class StorefrontController extends Controller
 {
@@ -88,9 +92,11 @@ class StorefrontController extends Controller
         $cartLines = $cartService->linesWithProducts();
         $subtotalMinor = $cartService->subtotalMinor();
         $discountMinor = $cartService->discountMinor();
+        $gstMinor = $cartService->gstMinor();
+        $gstPercentage = $cartService->gstPercentage();
         $totalMinor = $cartService->totalMinor();
 
-        return view('storefront.cart', compact('cart', 'cartLines', 'subtotalMinor', 'discountMinor', 'totalMinor'));
+        return view('storefront.cart', compact('cart', 'cartLines', 'subtotalMinor', 'discountMinor', 'gstMinor', 'gstPercentage', 'totalMinor'));
     }
 
     public function addToCart(Request $request, CartSessionService $cartService)
@@ -186,9 +192,11 @@ class StorefrontController extends Controller
         $cart = $cartService->cartViewModel();
         $subtotalMinor = $cartService->subtotalMinor();
         $discountMinor = $cartService->discountMinor();
+        $gstMinor = $cartService->gstMinor();
+        $gstPercentage = $cartService->gstPercentage();
         $totalMinor = $cartService->totalMinor();
 
-        return view('storefront.checkout', compact('cart', 'cartLines', 'subtotalMinor', 'discountMinor', 'totalMinor'));
+        return view('storefront.checkout', compact('cart', 'cartLines', 'subtotalMinor', 'discountMinor', 'gstMinor', 'gstPercentage', 'totalMinor'));
     }
 
     public function placeOrder(Request $request, CartSessionService $cartService)
@@ -218,7 +226,7 @@ class StorefrontController extends Controller
         $fulfillmentMethod = $request->input('fulfillment_method');
 
         $streetAddress = $fulfillmentMethod === 'pickup'
-            ? config('payments.pickup_address_label')
+            ? (SiteSetting::current()->pickup_address_label ?: config('payments.pickup_address_label'))
             : $request->street_address;
         $city = $fulfillmentMethod === 'pickup'
             ? 'Thimphu'
@@ -244,10 +252,14 @@ class StorefrontController extends Controller
             'fulfillment_method' => $fulfillmentMethod,
             'metadata' => [
                 'email' => $request->email,
-                'payment_method' => 'bank-transfer',
+                'payment_method' => PaymentMethods::MODE_BANK_TRANSFER,
                 'coupon_code' => $cartService->couponCode(),
                 'source' => 'storefront',
                 'fulfillment_method' => $fulfillmentMethod,
+                'subtotal_minor' => $cartService->subtotalMinor(),
+                'discount_minor' => $cartService->discountMinor(),
+                'gst_minor' => $cartService->gstMinor(),
+                'gst_percentage' => $cartService->gstPercentage(),
             ],
         ]);
 
@@ -302,13 +314,15 @@ class StorefrontController extends Controller
             ]);
         }
 
-        $paymentChannels = array_values(config('payments.channels', []));
+        $paymentApps = PaymentChannels::paymentApps();
+        $merchantAccount = PaymentChannels::merchantAccount();
         $totalNu = $order->total_minor / 100;
 
         return view('storefront.pay', [
             'order' => $order,
             'token' => $token,
-            'paymentChannels' => $paymentChannels,
+            'paymentApps' => $paymentApps,
+            'merchantAccount' => $merchantAccount,
             'totalNu' => $totalNu,
         ]);
     }
@@ -319,8 +333,13 @@ class StorefrontController extends Controller
         $this->assertPayToken($order, $token);
 
         $request->validate([
+            'payment_bank' => ['required', Rule::in(PaymentMethods::bankIds())],
+            'payment_reference' => 'required|string|max:255',
             'payment_proof' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ], [
+            'payment_bank.required' => 'Select the mobile banking app you used for this transfer.',
+            'payment_bank.in' => 'Select a valid mobile banking app ('.PaymentMethods::paymentAppNames().').',
+            'payment_reference.required' => 'Enter your transaction or journal number.',
             'payment_proof.required' => 'Please upload a screenshot of your payment confirmation.',
             'payment_proof.mimes' => 'Payment proof must be a JPG, PNG, or PDF file.',
             'payment_proof.max' => 'Payment proof file must be under 5 MB.',
@@ -330,6 +349,11 @@ class StorefrontController extends Controller
 
         $order->update([
             'payment_proof_path' => $proofPath,
+            'payment_reference' => $request->payment_reference,
+            'metadata' => array_merge($order->metadata ?? [], PaymentMethods::metadataPayload(
+                PaymentMethods::MODE_BANK_TRANSFER,
+                $request->payment_bank,
+            )),
         ]);
 
         return redirect()->route('checkout.confirmation', [

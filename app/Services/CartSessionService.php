@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Enums\CouponType;
 use App\Exceptions\InvalidCouponException;
 use App\Models\Coupon;
 use App\Models\Product;
+use App\Models\SiteSetting;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Session;
 
@@ -93,14 +95,36 @@ class CartSessionService
         $subtotal = $this->subtotalMinor();
 
         return match ($coupon->type) {
-            \App\Enums\CouponType::Percent => (int) floor($subtotal * min(100, $coupon->value) / 100),
-            \App\Enums\CouponType::FixedMinor => (int) min($subtotal, $coupon->value),
+            CouponType::Percent => (int) floor($subtotal * min(100, $coupon->value) / 100),
+            CouponType::FixedMinor => (int) min($subtotal, $coupon->value),
         };
+    }
+
+    public function taxableMinor(): int
+    {
+        return max(0, $this->subtotalMinor() - $this->discountMinor());
+    }
+
+    public function gstPercentage(): float
+    {
+        $pct = (float) (SiteSetting::current()->gst_percentage ?? 5);
+
+        return max(0, min(100, $pct));
+    }
+
+    public function gstMinor(): int
+    {
+        $pct = $this->gstPercentage();
+        if ($pct <= 0) {
+            return 0;
+        }
+
+        return (int) floor($this->taxableMinor() * $pct / 100);
     }
 
     public function totalMinor(): int
     {
-        return max(0, $this->subtotalMinor() - $this->discountMinor());
+        return $this->taxableMinor() + $this->gstMinor();
     }
 
     public function couponApplies(Coupon $coupon): bool

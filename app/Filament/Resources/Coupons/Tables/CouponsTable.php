@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Coupons\Tables;
 
+use App\Enums\CouponType;
+use App\Models\Coupon;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -17,7 +19,16 @@ class CouponsTable
             ->columns([
                 TextColumn::make('code')->searchable()->sortable(),
                 TextColumn::make('type')->badge(),
-                TextColumn::make('value')->sortable(),
+                TextColumn::make('value')
+                    ->label('Discount')
+                    ->formatStateUsing(function ($state, Coupon $record): string {
+                        if ($record->type === CouponType::FixedMinor) {
+                            return 'Nu. '.number_format(((int) $state) / 100);
+                        }
+
+                        return ((int) $state).'%';
+                    })
+                    ->sortable(),
                 TextColumn::make('uses_count')->sortable(),
                 IconColumn::make('is_active')->boolean(),
             ])

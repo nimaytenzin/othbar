@@ -5,16 +5,12 @@ namespace App\Livewire\Admin;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
-use Illuminate\Support\Facades\Storage;
+use App\Support\PaymentChannels;
 use Livewire\Component;
 
 class PaymentVerification extends Component
 {
     public Order $order;
-
-    public bool $showConfirmApprove = false;
-
-    public bool $showConfirmReject = false;
 
     public function mount(Order $order): void
     {
@@ -33,13 +29,11 @@ class PaymentVerification extends Component
 
         $this->order->update([
             'payment_status' => PaymentStatus::Paid,
-            'status' => OrderStatus::Processing,
         ]);
 
         $this->order->refresh();
-        $this->showConfirmApprove = false;
 
-        session()->flash('payment_verified', 'Payment approved. Order is now processing.');
+        session()->flash('payment_verified', 'Payment confirmed. You can now mark the order as fulfilled.');
         $this->dispatch('order-payment-approved');
     }
 
@@ -55,7 +49,6 @@ class PaymentVerification extends Component
         ]);
 
         $this->order->refresh();
-        $this->showConfirmReject = false;
 
         session()->flash('payment_rejected', 'Payment rejected. Order has been cancelled.');
         $this->dispatch('order-payment-rejected');
@@ -67,7 +60,12 @@ class PaymentVerification extends Component
             return null;
         }
 
-        return Storage::disk('public')->url($this->order->payment_proof_path);
+        return asset('storage/'.$this->order->payment_proof_path);
+    }
+
+    public function proofDownloadUrl(): string
+    {
+        return route('filament.admin.orders.payment-proof', $this->order);
     }
 
     public function proofIsImage(): bool
@@ -85,7 +83,10 @@ class PaymentVerification extends Component
     {
         return view('livewire.admin.payment-verification', [
             'proofUrl' => $this->proofUrl(),
+            'proofDownloadUrl' => $this->proofDownloadUrl(),
             'proofIsImage' => $this->proofIsImage(),
+            'merchantAccount' => PaymentChannels::merchantAccount(),
+            'paymentApps' => PaymentChannels::paymentApps(),
         ]);
     }
 }

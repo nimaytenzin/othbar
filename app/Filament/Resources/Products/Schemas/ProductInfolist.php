@@ -38,7 +38,9 @@ class ProductInfolist
                 TextEntry::make('stock_quantity')->label('Stock'),
                 IconEntry::make('allow_backorder')->boolean(),
                 IconEntry::make('is_visible')->boolean(),
-                TextEntry::make('price_minor')->label('Price (minor)'),
+                TextEntry::make('price_minor')
+                    ->label('Price (Nu.)')
+                    ->formatStateUsing(fn ($state): string => 'Nu. '.number_format(((int) $state) / 100)),
                 TextEntry::make('currency_code'),
             ]);
     }

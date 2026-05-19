@@ -58,17 +58,24 @@ class SiteSetting extends Model
         'testimonials',
         'principles',
         'team_members',
+        'payment_channels',
+        'payment_merchant_account',
+        'pickup_address_label',
+        'gst_percentage',
     ];
 
     protected function casts(): array
     {
         return [
+            'gst_percentage' => 'decimal:2',
             'story_origin_paragraphs' => 'array',
             'provenance_items' => 'array',
             'stats' => 'array',
             'testimonials' => 'array',
             'principles' => 'array',
             'team_members' => 'array',
+            'payment_channels' => 'array',
+            'payment_merchant_account' => 'array',
         ];
     }
 
@@ -204,6 +211,15 @@ class SiteSetting extends Model
                 ['name' => 'Sonam Choki', 'role' => 'Herb cultivation', 'valley' => 'Haa Valley'],
                 ['name' => 'Jigme Dorji', 'role' => 'Cooperative director', 'valley' => 'Punakha'],
             ],
+            'payment_merchant_account' => [
+                'bank_label' => config('payments.merchant_account.bank_label'),
+                'account_name' => config('payments.merchant_account.account_name'),
+                'account_number' => config('payments.merchant_account.account_number'),
+                'qr_path' => null,
+            ],
+            'payment_channels' => [],
+            'pickup_address_label' => config('payments.pickup_address_label', 'In-store pickup at Othbar'),
+            'gst_percentage' => 5,
         ];
     }
 }

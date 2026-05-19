@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\StorefrontController;
+use App\Models\Order;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StorefrontController::class, 'home'])->name('home');
@@ -28,7 +29,8 @@ Route::get('/checkout/pay/{order}/{token}', [StorefrontController::class, 'showP
 Route::post('/checkout/pay/{order}/{token}', [StorefrontController::class, 'submitPaymentProof'])->name('checkout.pay.submit');
 Route::get('/checkout/confirmation/{order}/{token}', [StorefrontController::class, 'orderConfirmation'])->name('checkout.confirmation');
 
-Route::middleware(['auth', 'role:administrator'])->group(function (): void {
-    Route::get('/staff/orders/{order}/receipt', [\App\Http\Controllers\Admin\OrderReceiptController::class, 'show'])
-        ->name('admin.orders.receipt');
+Route::middleware(['auth', 'role:administrator|staff'])->group(function (): void {
+    Route::get('/staff/orders/{order}/receipt', function (Order $order) {
+        return redirect()->route('filament.admin.orders.receipt', $order);
+    })->name('admin.orders.receipt');
 });

@@ -35,6 +35,7 @@
             <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 700; color: #1E3A2A;">{{ $order->number }}</span>
         </div>
 
+        @php $pricing = $order->pricingSummary(); @endphp
         @foreach($order->items as $item)
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid rgba(216,204,173,0.5);">
             <div>
@@ -45,7 +46,23 @@
         </div>
         @endforeach
 
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; margin-top: 0.5rem; border-top: 2px solid #D8CCAD;">
+        <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; margin-top: 0.5rem; font-size: 0.85rem; border-top: 1px solid rgba(216,204,173,0.5);">
+            <span>Subtotal</span>
+            <span>Nu. {{ number_format($pricing['subtotal_minor'] / 100) }}</span>
+        </div>
+        @if($pricing['discount_minor'] > 0)
+        <div style="display: flex; justify-content: space-between; padding: 0.35rem 0; font-size: 0.85rem;">
+            <span>Discount</span>
+            <span style="color: #C4843C;">− Nu. {{ number_format($pricing['discount_minor'] / 100) }}</span>
+        </div>
+        @endif
+        @if($pricing['gst_minor'] > 0)
+        <div style="display: flex; justify-content: space-between; padding: 0.35rem 0; font-size: 0.85rem;">
+            <span>GST ({{ rtrim(rtrim(number_format($pricing['gst_percentage'], 2), '0'), '.') }}%)</span>
+            <span>Nu. {{ number_format($pricing['gst_minor'] / 100) }}</span>
+        </div>
+        @endif
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; margin-top: 0.25rem; border-top: 2px solid #D8CCAD;">
             <span style="font-size: 0.9rem; font-weight: 600; color: #1E3A2A;">Order total</span>
             <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 700; color: #1E3A2A;">Nu. {{ number_format($order->total_minor / 100) }}</span>
         </div>
@@ -53,11 +70,19 @@
         {{-- Payment proof --}}
         <div style="margin-top: 1rem; padding: 1rem 1.25rem; background: rgba(30,58,42,0.04); border-left: 3px solid #C4843C;">
             <p style="font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(30,58,42,0.5); margin-bottom: 0.5rem;">Payment confirmation</p>
+            @php
+                $paymentMeta = is_array($order->metadata) ? $order->metadata : [];
+            @endphp
             @if($order->payment_proof_path)
-            <p style="font-size: 0.85rem; color: #1E3A2A; display: flex; align-items: center; gap: 0.5rem;">
+            <p style="font-size: 0.85rem; color: #1E3A2A; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1E3A2A" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Screenshot received — we’ll verify and email or call you if anything is unclear.
             </p>
+            @if($order->payment_reference || ! empty($paymentMeta['payment_bank']))
+            <p style="font-size: 0.82rem; color: rgba(30,58,42,0.75);">
+                {{ \App\Support\PaymentMethods::paymentSummary($paymentMeta, $order->payment_reference) }}
+            </p>
+            @endif
             @else
             <p style="font-size: 0.85rem; color: #b91c1c; margin-bottom: 0.75rem;">Payment screenshot not uploaded yet.</p>
             <a href="{{ route('checkout.pay', ['order' => $order->id, 'token' => $token]) }}" class="btn-primary" style="text-decoration: none; display: inline-block; font-size: 0.78rem;">Return to payment page</a>

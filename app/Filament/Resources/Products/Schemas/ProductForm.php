@@ -108,9 +108,12 @@ class ProductForm
                             ->numeric()
                             ->required()
                             ->minValue(0)
-                            ->label('Price (chetrums)')
-                            ->helperText('Enter the price in chetrums. Example: 28000 = Nu. 280.')
-                            ->suffix('chetrums'),
+                            ->step(0.01)
+                            ->label('Price (Nu.)')
+                            ->helperText('Price in Ngultrum. Example: 280 = Nu. 280.')
+                            ->suffix('Nu.')
+                            ->formatStateUsing(fn ($state) => $state !== null && $state !== '' ? ((int) $state) / 100 : null)
+                            ->dehydrateStateUsing(fn ($state) => (int) round((float) $state * 100)),
                         TextInput::make('currency_code')
                             ->default('BTN')
                             ->maxLength(8),

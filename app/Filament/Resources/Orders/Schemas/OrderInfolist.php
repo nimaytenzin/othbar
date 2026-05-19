@@ -19,8 +19,8 @@ class OrderInfolist
                 TextEntry::make('shipping_status')->badge(),
                 TextEntry::make('fulfillment_method')->badge(),
                 TextEntry::make('total_minor')
-                    ->label('Total (Nu.)')
-                    ->formatStateUsing(fn ($state): string => number_format(((int) $state) / 100)),
+                    ->label('Total')
+                    ->formatStateUsing(fn ($state): string => 'Nu. '.number_format(((int) $state) / 100)),
                 TextEntry::make('currency_code'),
                 TextEntry::make('payment_reference'),
                 TextEntry::make('payment_access_token')

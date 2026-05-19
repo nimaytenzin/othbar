@@ -13,6 +13,8 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(RolePermissionSeeder::class);
+
         $email = (string) env('ADMIN_EMAIL', 'admin@othbar.local');
         $plainPassword = (string) env('ADMIN_PASSWORD', 'password');
 

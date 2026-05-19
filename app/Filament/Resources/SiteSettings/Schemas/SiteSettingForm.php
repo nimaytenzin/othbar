@@ -5,6 +5,7 @@ namespace App\Filament\Resources\SiteSettings\Schemas;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -43,7 +44,7 @@ class SiteSettingForm
     }
 
     /**
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     protected static function brandTab(): array
     {
@@ -62,12 +63,17 @@ class SiteSettingForm
                     Textarea::make('contact_address')->rows(3)->columnSpanFull(),
                     TextInput::make('contact_phone')->tel()->maxLength(50),
                     TextInput::make('contact_email')->email()->maxLength(150),
+                    TextInput::make('pickup_address_label')
+                        ->label('In-store pickup location')
+                        ->helperText('Address text shown when a customer chooses in-store pickup at checkout (not related to bank payment).')
+                        ->maxLength(255)
+                        ->columnSpanFull(),
                 ]),
         ];
     }
 
     /**
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     protected static function heroTab(): array
     {
@@ -83,7 +89,7 @@ class SiteSettingForm
     }
 
     /**
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     protected static function homeSectionsTab(): array
     {
@@ -127,7 +133,7 @@ class SiteSettingForm
     }
 
     /**
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     protected static function storyTab(): array
     {
@@ -168,7 +174,7 @@ class SiteSettingForm
     }
 
     /**
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     protected static function provenanceTab(): array
     {
@@ -187,7 +193,7 @@ class SiteSettingForm
     }
 
     /**
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     protected static function statsTab(): array
     {
@@ -207,7 +213,7 @@ class SiteSettingForm
     }
 
     /**
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     protected static function testimonialsTab(): array
     {
@@ -227,7 +233,7 @@ class SiteSettingForm
     }
 
     /**
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     protected static function principlesTab(): array
     {
@@ -245,7 +251,7 @@ class SiteSettingForm
     }
 
     /**
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     protected static function teamTab(): array
     {

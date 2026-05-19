@@ -17,6 +17,7 @@ DB_ONLY=0
 FORCE_BUILD=0
 RUN_MIGRATE=0
 RUN_MIGRATE_FRESH=0
+RUN_SEED=0
 ZIP_BUILD=0
 
 usage() {
@@ -31,8 +32,9 @@ usage() {
   echo "  --zip-build    Run npm run build once, then create public-build.zip (for cPanel upload)."
   echo "                 Does not start the dev stack. Rebuilds when resources/ or vite config change."
   echo "  --migrate      Run php artisan migrate before starting servers"
-  echo "  --migrate-fresh  Drop all tables, then migrate (--force). Wipes DB data; use when"
-  echo "                   migrate fails with \"table already exists\" or schema is inconsistent."
+  echo "  --migrate-fresh  Drop all tables, then migrate and seed (--force). Wipes DB data;"
+  echo "                   use when migrate fails with \"table already exists\" or schema is inconsistent."
+  echo "  --seed         Run php artisan db:seed (admin, staff, roles, sample catalog)"
   echo "  --build        Force rebuild the PHP dev image"
   echo "  --install      Always run composer install (default: run if vendor/ missing)"
   echo "  -h, --help     Show this help"
@@ -44,7 +46,8 @@ while [[ $# -gt 0 ]]; do
     --db-only) DB_ONLY=1 ;;
     --no-vite) WITH_VITE=0 ;;
     --migrate) RUN_MIGRATE=1 ;;
-    --migrate-fresh) RUN_MIGRATE_FRESH=1 ;;
+    --migrate-fresh) RUN_MIGRATE_FRESH=1; RUN_SEED=1 ;;
+    --seed) RUN_SEED=1 ;;
     --build) FORCE_BUILD=1 ;;
     --zip-build) ZIP_BUILD=1 ;;
     --install) FORCE_INSTALL=1 ;;
@@ -165,6 +168,11 @@ if [[ "${RUN_MIGRATE_FRESH}" -eq 1 ]]; then
 elif [[ "${RUN_MIGRATE}" -eq 1 ]]; then
   echo "Running migrations..."
   "${COMPOSE[@]}" run --rm app php artisan migrate --force
+fi
+
+if [[ "${RUN_SEED}" -eq 1 ]]; then
+  echo "Seeding database (roles, admin, staff, catalog)..."
+  "${COMPOSE[@]}" run --rm app php artisan db:seed --force
 fi
 
 # If bootstrap/cache/config.php exists, Laravel skips loading .env and ignores Compose DB_* (you get 127.0.0.1 + stale PORT).

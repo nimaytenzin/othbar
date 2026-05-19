@@ -121,7 +121,14 @@
             </div>
             @endif
 
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-top: 1px solid #D8CCAD; border-bottom: 1px solid #D8CCAD; margin-bottom: 1.5rem;">
+            @if(($gstMinor ?? 0) > 0 && ($gstPercentage ?? 0) > 0)
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; font-size: 0.88rem; color: #1E3A2A;">
+                <span>GST ({{ rtrim(rtrim(number_format($gstPercentage, 2), '0'), '.') }}%)</span>
+                <span>Nu. {{ number_format($gstMinor / 100) }}</span>
+            </div>
+            @endif
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-top: 2px solid #1E3A2A; border-bottom: 1px solid #D8CCAD; margin-bottom: 1.5rem;">
                 <span style="font-size: 1rem; font-weight: 600; color: #1E3A2A;">Total</span>
                 <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.75rem; font-weight: 700; color: #1E3A2A;">Nu. {{ number_format(($totalMinor ?? $cartLines->sum(fn($l) => $l->unit_price_amount * $l->quantity)) / 100) }}</span>
             </div>
