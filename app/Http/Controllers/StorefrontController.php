@@ -349,7 +349,7 @@ class StorefrontController extends Controller
     public function staffLogin()
     {
         return view('storefront.staff-login', [
-            'adminLoginUrl' => url('/cpanel/login'),
+            'adminLoginUrl' => url('/admin/login'),
         ]);
     }
 

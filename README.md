@@ -1,6 +1,6 @@
 # Othbar
 
-Laravel application with a Filament admin panel at `/cpanel` (see `.env.example` for local URLs and admin seed defaults).
+Laravel application with a Filament admin panel at `/admin` (see `.env.example` for local URLs and admin seed defaults).
 
 ---
 

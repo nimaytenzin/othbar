@@ -21,7 +21,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
         </a>
         <p style="font-size: 0.72rem; color: rgba(30,58,42,0.5); margin: 1.5rem 0 0; line-height: 1.6;">
-            Admin panel URL: <code style="background: rgba(30,58,42,0.08); padding: 0.15rem 0.4rem; font-size: 0.68rem;">/cpanel/login</code>
+            Admin panel URL: <code style="background: rgba(30,58,42,0.08); padding: 0.15rem 0.4rem; font-size: 0.68rem;">/admin/login</code>
         </p>
     </div>
 </div>

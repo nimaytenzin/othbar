@@ -38,7 +38,7 @@ Default staff account from [`AdminUserSeeder`](database/seeders/AdminUserSeeder.
 |--|--|
 | **Email** | `admin@othbar.local` (override with `ADMIN_EMAIL`) |
 | **Password** | `password` (override with `ADMIN_PASSWORD`) |
-| **Admin URL** | `http://localhost:8000/cpanel/login` (Filament panel) |
+| **Admin URL** | `http://localhost:8000/admin/login` (Filament panel) |
 
 Storefront “Login” in the header opens `/login`, then **Continue to admin login** goes to the same panel.
 
@@ -48,6 +48,7 @@ Storefront “Login” in the header opens `/login`, then **Continue to admin lo
 |------|---------|
 | `./docker-dev.sh --migrate` | Run `php artisan migrate --force` before serving |
 | `./docker-dev.sh --no-vite` | Only PHP / Artisan serve (run `npm run dev` on the host yourself if needed) |
+| `./docker-dev.sh --zip-build` | One production `npm run build`, then `public-build.zip` for cPanel upload (skips if sources unchanged) |
 | `./docker-dev.sh --build` | Force rebuild the PHP image (`--no-cache`) |
 | `./docker-dev.sh --install` | Always run `composer install` |
 

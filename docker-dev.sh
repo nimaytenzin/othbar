@@ -17,16 +17,19 @@ DB_ONLY=0
 FORCE_BUILD=0
 RUN_MIGRATE=0
 RUN_MIGRATE_FRESH=0
+ZIP_BUILD=0
 
 usage() {
   echo "Usage: $0 [options]"
-  echo "  Full stack: MariaDB (Docker) + Laravel app + optional Vite."
+  echo "  Full stack: MariaDB (Docker) + optional Laravel app + optional Vite dev server."
   echo "  App: http://localhost:\${APP_PORT:-8000}  |  DB published: localhost:\${MYSQL_PUBLISH_PORT:-3307}"
   echo ""
   echo "Options:"
   echo "  --db-only      Only start MariaDB in Docker (use when PHP runs on your machine:"
   echo "                 DB_HOST=127.0.0.1, DB_PORT same as MYSQL_PUBLISH_PORT, default 3307)"
   echo "  --no-vite      Only run php artisan serve (no Node/Vite container)"
+  echo "  --zip-build    Run npm run build once, then create public-build.zip (for cPanel upload)."
+  echo "                 Does not start the dev stack. Rebuilds when resources/ or vite config change."
   echo "  --migrate      Run php artisan migrate before starting servers"
   echo "  --migrate-fresh  Drop all tables, then migrate (--force). Wipes DB data; use when"
   echo "                   migrate fails with \"table already exists\" or schema is inconsistent."
@@ -43,6 +46,7 @@ while [[ $# -gt 0 ]]; do
     --migrate) RUN_MIGRATE=1 ;;
     --migrate-fresh) RUN_MIGRATE_FRESH=1 ;;
     --build) FORCE_BUILD=1 ;;
+    --zip-build) ZIP_BUILD=1 ;;
     --install) FORCE_INSTALL=1 ;;
     -h|--help) usage; exit 0 ;;
     *)
@@ -57,6 +61,61 @@ done
 if [[ "${RUN_MIGRATE}" -eq 1 && "${RUN_MIGRATE_FRESH}" -eq 1 ]]; then
   echo "Use only one of --migrate or --migrate-fresh." >&2
   exit 1
+fi
+
+if [[ "${ZIP_BUILD}" -eq 1 && ( "${DB_ONLY}" -eq 1 || "${RUN_MIGRATE}" -eq 1 || "${RUN_MIGRATE_FRESH}" -eq 1 ) ]]; then
+  echo "--zip-build cannot be combined with --db-only, --migrate, or --migrate-fresh." >&2
+  exit 1
+fi
+
+vite_sources_fingerprint() {
+  # Hash frontend inputs so we only rebuild/rezip when Vite sources actually change.
+  {
+    [[ -f package-lock.json ]] && md5sum package-lock.json
+    [[ -f vite.config.js ]] && md5sum vite.config.js
+    find resources -type f 2>/dev/null | LC_ALL=C sort | xargs -r md5sum
+  } | md5sum | awk '{print $1}'
+}
+
+build_and_zip_vite_assets() {
+  local zip_path="${ROOT}/public-build.zip"
+  local stamp_path="${ROOT}/.vite-build.stamp"
+  local fingerprint current_stamp
+
+  fingerprint="$(vite_sources_fingerprint)"
+  current_stamp="$(cat "${stamp_path}" 2>/dev/null || true)"
+
+  if [[ "${fingerprint}" == "${current_stamp}" && -f "${zip_path}" && -d public/build ]]; then
+    echo "Vite sources unchanged — skipping build. Upload: ${zip_path}"
+    return 0
+  fi
+
+  echo "Building Vite assets once (npm run build)..."
+  "${COMPOSE[@]}" run --rm --no-deps vite sh -c 'test -d node_modules || npm ci && npm run build'
+  rm -f "${ROOT}/public/hot"
+
+  if [[ ! -d public/build ]]; then
+    echo "Build failed: public/build not found." >&2
+    exit 1
+  fi
+
+  if ! command -v zip >/dev/null 2>&1; then
+    echo "zip is required on the host to create public-build.zip (e.g. sudo apt install zip)." >&2
+    exit 1
+  fi
+
+  echo "Creating ${zip_path}..."
+  rm -f "${zip_path}"
+  (cd public && zip -qr "../public-build.zip" build)
+  printf '%s\n' "${fingerprint}" > "${stamp_path}"
+
+  echo "Done. Upload public/build on the server (extract zip into public/):"
+  echo "  ${zip_path} ($(du -h "${zip_path}" | awk '{print $1}'))"
+}
+
+if [[ "${ZIP_BUILD}" -eq 1 ]]; then
+  build_and_zip_vite_assets
+  exit 0
 fi
 
 if [[ ! -f .env ]]; then

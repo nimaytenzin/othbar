@@ -25,7 +25,7 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('cpanel')
+            ->path('admin')
             ->login()
             ->brandName('Othbar')
             ->colors([
