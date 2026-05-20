@@ -27,6 +27,8 @@ class Order extends Model
         'metadata',
         'shipping_address_id',
         'created_by_user_id',
+        'customer_id',
+        'invoice_id',
     ];
 
     protected function casts(): array
@@ -52,6 +54,16 @@ class Order extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class);
     }
 
     public function isCounter(): bool
@@ -187,7 +199,50 @@ class Order extends Model
     }
 
     /**
-     * @return array{subtotal_minor: int, discount_minor: int, gst_minor: int, gst_percentage: float, total_minor: int, has_gst_breakdown: bool}
+     * Active orders still in the pipeline (cumulative — not scoped to a single day).
+     *
+     * @param  Builder<Order>  $query
+     * @return Builder<Order>
+     */
+    public function scopePending(Builder $query): Builder
+    {
+        return $query->whereNotIn('status', [OrderStatus::Completed, OrderStatus::Cancelled]);
+    }
+
+    /**
+     * @param  Builder<Order>  $query
+     * @return Builder<Order>
+     */
+    public function scopeCompletedOnDay(Builder $query, ?string $day = null): Builder
+    {
+        return $query
+            ->where('status', OrderStatus::Completed)
+            ->whereDate('updated_at', $day ?? today()->toDateString());
+    }
+
+    /**
+     * @param  Builder<Order>  $query
+     * @return Builder<Order>
+     */
+    public function scopeCancelledOnDay(Builder $query, ?string $day = null): Builder
+    {
+        return $query
+            ->where('status', OrderStatus::Cancelled)
+            ->whereDate('updated_at', $day ?? today()->toDateString());
+    }
+
+    /**
+     * @return array{
+     *     subtotal_minor: int,
+     *     discount_minor: int,
+     *     gst_minor: int,
+     *     effective_tax_rate: float,
+     *     gst_percentage: float,
+     *     total_minor: int,
+     *     has_gst_breakdown: bool,
+     *     tax_breakdown: list<array>|null,
+     *     show_tax_rate: bool
+     * }
      */
     public function pricingSummary(): array
     {
@@ -195,13 +250,30 @@ class Order extends Model
         $itemsSubtotal = (int) $this->items->sum(fn (OrderItem $item) => $item->line_total_minor);
 
         if (array_key_exists('gst_minor', $meta)) {
+            $subtotal = (int) ($meta['subtotal_minor'] ?? $itemsSubtotal);
+            $discount = (int) ($meta['discount_minor'] ?? 0);
+            $gstMinor = (int) $meta['gst_minor'];
+            $taxable = max(0, $subtotal - $discount);
+
+            $effectiveRate = (float) ($meta['effective_tax_rate']
+                ?? $meta['gst_percentage']
+                ?? ($taxable > 0 ? round(($gstMinor / $taxable) * 100, 2) : 0));
+
+            $taxBreakdown = $meta['tax_breakdown'] ?? null;
+            $showTaxRate = is_array($taxBreakdown)
+                ? count($taxBreakdown) <= 1
+                : true;
+
             return [
-                'subtotal_minor' => (int) ($meta['subtotal_minor'] ?? $itemsSubtotal),
-                'discount_minor' => (int) ($meta['discount_minor'] ?? 0),
-                'gst_minor' => (int) $meta['gst_minor'],
-                'gst_percentage' => (float) ($meta['gst_percentage'] ?? 0),
+                'subtotal_minor' => $subtotal,
+                'discount_minor' => $discount,
+                'gst_minor' => $gstMinor,
+                'effective_tax_rate' => $effectiveRate,
+                'gst_percentage' => $effectiveRate,
                 'total_minor' => (int) $this->total_minor,
                 'has_gst_breakdown' => true,
+                'tax_breakdown' => $taxBreakdown,
+                'show_tax_rate' => $showTaxRate,
             ];
         }
 
@@ -209,9 +281,12 @@ class Order extends Model
             'subtotal_minor' => $itemsSubtotal,
             'discount_minor' => max(0, $itemsSubtotal - (int) $this->total_minor),
             'gst_minor' => 0,
+            'effective_tax_rate' => 0,
             'gst_percentage' => 0,
             'total_minor' => (int) $this->total_minor,
             'has_gst_breakdown' => false,
+            'tax_breakdown' => null,
+            'show_tax_rate' => true,
         ];
     }
 }

@@ -7,7 +7,6 @@ use App\Enums\PaymentStatus;
 use App\Exceptions\InvalidCouponException;
 use App\Models\Category;
 use App\Models\Collection;
-use App\Models\JournalPost;
 use App\Models\Order;
 use App\Models\OrderAddress;
 use App\Models\OrderItem;
@@ -24,7 +23,8 @@ class StorefrontController extends Controller
 {
     public function home()
     {
-        $featuredProducts = Product::query()->with(['media', 'brand'])
+        $featuredProducts = Product::query()
+            ->with(['media', 'brand', 'categories'])
             ->where('is_visible', true)
             ->latest()
             ->take(6)
@@ -35,9 +35,7 @@ class StorefrontController extends Controller
             ->take(6)
             ->get();
 
-        $collections = Collection::query()->take(3)->get();
-
-        return view('storefront.home', compact('featuredProducts', 'categories', 'collections'));
+        return view('storefront.home', compact('featuredProducts', 'categories'));
     }
 
     public function shop(Request $request)
@@ -53,10 +51,21 @@ class StorefrontController extends Controller
             $query->where('name', 'like', '%'.$request->search.'%');
         }
 
-        $products = $query->latest()->paginate(12);
-        $categories = Category::query()->whereNull('parent_id')->get();
+        $sort = $request->string('sort')->toString();
+        match ($sort) {
+            'price_asc' => $query->orderBy('price_minor')->orderBy('name'),
+            'price_desc' => $query->orderByDesc('price_minor')->orderBy('name'),
+            'name' => $query->orderBy('name'),
+            default => $query->latest(),
+        };
 
-        return view('storefront.shop', compact('products', 'categories'));
+        $products = $query->paginate(12)->withQueryString();
+        $categories = Category::query()->whereNull('parent_id')->get();
+        $activeCategory = $request->filled('category')
+            ? Category::query()->where('slug', $request->category)->first()
+            : null;
+
+        return view('storefront.shop', compact('products', 'categories', 'activeCategory'));
     }
 
     public function product(string $slug)
@@ -90,13 +99,10 @@ class StorefrontController extends Controller
     {
         $cart = $cartService->cartViewModel();
         $cartLines = $cartService->linesWithProducts();
-        $subtotalMinor = $cartService->subtotalMinor();
-        $discountMinor = $cartService->discountMinor();
-        $gstMinor = $cartService->gstMinor();
-        $gstPercentage = $cartService->gstPercentage();
-        $totalMinor = $cartService->totalMinor();
+        $pricing = $cartService->pricingTotals();
+        extract($this->cartPricingViewData($pricing));
 
-        return view('storefront.cart', compact('cart', 'cartLines', 'subtotalMinor', 'discountMinor', 'gstMinor', 'gstPercentage', 'totalMinor'));
+        return view('storefront.cart', compact('cart', 'cartLines', 'subtotalMinor', 'discountMinor', 'gstMinor', 'effectiveTaxRate', 'totalMinor'));
     }
 
     public function addToCart(Request $request, CartSessionService $cartService)
@@ -190,13 +196,10 @@ class StorefrontController extends Controller
         }
 
         $cart = $cartService->cartViewModel();
-        $subtotalMinor = $cartService->subtotalMinor();
-        $discountMinor = $cartService->discountMinor();
-        $gstMinor = $cartService->gstMinor();
-        $gstPercentage = $cartService->gstPercentage();
-        $totalMinor = $cartService->totalMinor();
+        $pricing = $cartService->pricingTotals();
+        extract($this->cartPricingViewData($pricing));
 
-        return view('storefront.checkout', compact('cart', 'cartLines', 'subtotalMinor', 'discountMinor', 'gstMinor', 'gstPercentage', 'totalMinor'));
+        return view('storefront.checkout', compact('cart', 'cartLines', 'subtotalMinor', 'discountMinor', 'gstMinor', 'effectiveTaxRate', 'totalMinor'));
     }
 
     public function placeOrder(Request $request, CartSessionService $cartService)
@@ -236,12 +239,12 @@ class StorefrontController extends Controller
             : $request->postal_code;
 
         $payToken = Str::random(48);
-        $totalMinor = $cartService->totalMinor();
+        $pricing = $cartService->pricingTotals();
         $coupon = $cartService->resolvedCoupon();
 
         $order = Order::query()->create([
             'number' => 'OTH-'.strtoupper(substr(uniqid(), -6)),
-            'total_minor' => $totalMinor,
+            'total_minor' => $pricing['total_minor'],
             'currency_code' => 'BTN',
             'status' => OrderStatus::New,
             'payment_status' => PaymentStatus::Pending,
@@ -256,10 +259,11 @@ class StorefrontController extends Controller
                 'coupon_code' => $cartService->couponCode(),
                 'source' => 'storefront',
                 'fulfillment_method' => $fulfillmentMethod,
-                'subtotal_minor' => $cartService->subtotalMinor(),
-                'discount_minor' => $cartService->discountMinor(),
-                'gst_minor' => $cartService->gstMinor(),
-                'gst_percentage' => $cartService->gstPercentage(),
+                'subtotal_minor' => $pricing['subtotal_minor'],
+                'discount_minor' => $pricing['discount_minor'],
+                'gst_minor' => $pricing['gst_minor'],
+                'effective_tax_rate' => $pricing['effective_tax_rate'],
+                'tax_breakdown' => $pricing['tax_breakdown'],
             ],
         ]);
 
@@ -382,37 +386,25 @@ class StorefrontController extends Controller
         return view('storefront.story');
     }
 
-    public function journal()
-    {
-        $posts = JournalPost::query()
-            ->published()
-            ->latest('published_at')
-            ->paginate(9);
-
-        return view('storefront.journal.index', compact('posts'));
-    }
-
-    public function journalShow(string $slug)
-    {
-        $post = JournalPost::query()
-            ->published()
-            ->where('slug', $slug)
-            ->firstOrFail();
-
-        $recentPosts = JournalPost::query()
-            ->published()
-            ->where('id', '!=', $post->id)
-            ->latest('published_at')
-            ->take(3)
-            ->get();
-
-        return view('storefront.journal.show', compact('post', 'recentPosts'));
-    }
-
     private function assertPayToken(Order $order, string $token): void
     {
         if (! $order->payment_access_token || ! hash_equals((string) $order->payment_access_token, $token)) {
             abort(404);
         }
+    }
+
+    /**
+     * @param  array{subtotal_minor: int, discount_minor: int, gst_minor: int, total_minor: int, effective_tax_rate: float}  $pricing
+     * @return array{subtotalMinor: int, discountMinor: int, gstMinor: int, effectiveTaxRate: float, totalMinor: int}
+     */
+    private function cartPricingViewData(array $pricing): array
+    {
+        return [
+            'subtotalMinor' => $pricing['subtotal_minor'],
+            'discountMinor' => $pricing['discount_minor'],
+            'gstMinor' => $pricing['gst_minor'],
+            'effectiveTaxRate' => $pricing['effective_tax_rate'],
+            'totalMinor' => $pricing['total_minor'],
+        ];
     }
 }

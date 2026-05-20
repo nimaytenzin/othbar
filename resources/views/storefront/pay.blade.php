@@ -155,7 +155,13 @@
             @endif
             @if($pricing['gst_minor'] > 0)
             <div style="display: flex; justify-content: space-between; padding: 0.35rem 0; font-size: 0.82rem;">
-                <span>GST ({{ rtrim(rtrim(number_format($pricing['gst_percentage'], 2), '0'), '.') }}%)</span>
+                <span>
+                    @if(($pricing['show_tax_rate'] ?? true) && ($pricing['effective_tax_rate'] ?? $pricing['gst_percentage'] ?? 0) > 0)
+                        GST ({{ rtrim(rtrim(number_format($pricing['effective_tax_rate'] ?? $pricing['gst_percentage'], 2), '0'), '.') }}%)
+                    @else
+                        GST
+                    @endif
+                </span>
                 <span>Nu. {{ number_format($pricing['gst_minor'] / 100) }}</span>
             </div>
             @endif

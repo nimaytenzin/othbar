@@ -22,7 +22,7 @@ abstract class TestCase extends BaseTestCase
 
         SiteSetting::query()->updateOrCreate(
             ['id' => 1],
-            array_merge(SiteSetting::defaults(), ['gst_percentage' => 0]),
+            array_merge(SiteSetting::defaults(), ['is_gst_registered' => false]),
         );
         SiteSetting::clearCache();
     }

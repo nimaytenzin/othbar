@@ -2,11 +2,14 @@
 
 namespace App\Filament\Schemas;
 
-use Filament\Forms\Components\FileUpload;
+use App\Filament\Resources\BankAccounts\BankAccountResource;
+use App\Support\PaymentChannels;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class PaymentSettingsForm
 {
@@ -23,46 +26,35 @@ class PaymentSettingsForm
     public static function components(): array
     {
         return [
-            Section::make('GST / tax')
-                ->description('GST is calculated on the order amount after coupon discounts (subtotal minus discount).')
-                ->schema([
-                    TextInput::make('gst_percentage')
-                        ->label('GST rate')
-                        ->numeric()
-                        ->minValue(0)
-                        ->maxValue(100)
-                        ->step(0.01)
-                        ->suffix('%')
-                        ->default(5)
-                        ->helperText('Set to 0 to disable GST on new orders.')
-                        ->required(),
-                ]),
             Section::make('Receiving bank account')
-                ->description('One account where customers transfer payment. On checkout they choose which mobile app (mBoB, mPAY, ePay, etc.) they used — those apps are fixed in the system.')
+                ->description('Used on storefront checkout and payment instructions. Manage accounts under Settings → Bank Accounts.')
                 ->schema([
-                    TextInput::make('payment_merchant_account.bank_label')
-                        ->label('Bank name')
-                        ->helperText('e.g. Bank of Bhutan (BoB)')
-                        ->maxLength(150)
-                        ->required(),
-                    TextInput::make('payment_merchant_account.account_name')
-                        ->label('Account name')
-                        ->maxLength(150)
-                        ->required(),
-                    TextInput::make('payment_merchant_account.account_number')
-                        ->label('Account number')
-                        ->maxLength(80)
-                        ->required(),
-                    FileUpload::make('payment_merchant_account.qr_path')
-                        ->label('Payment QR code')
-                        ->disk('public')
-                        ->directory('payment-qr')
-                        ->image()
-                        ->maxSize(2048)
-                        ->helperText('Scan-to-pay QR for this account (works with supported mobile banking apps).')
-                        ->columnSpanFull(),
-                ])
-                ->columns(2),
+                    Placeholder::make('default_bank_account')
+                        ->label('Default account')
+                        ->content(fn (): HtmlString => new HtmlString(static::defaultBankAccountHtml())),
+                ]),
+            Section::make('Pickup')
+                ->schema([
+                    TextInput::make('pickup_address_label')
+                        ->label('Pickup address label')
+                        ->maxLength(255),
+                ]),
         ];
+    }
+
+    protected static function defaultBankAccountHtml(): string
+    {
+        $account = PaymentChannels::defaultBankAccount();
+        $manageUrl = BankAccountResource::getUrl('index');
+
+        if ($account === null) {
+            return "No active bank account configured. <a href=\"{$manageUrl}\" class=\"underline font-medium\">Add a bank account</a> and mark it as default.";
+        }
+
+        $label = e($account->displayLabel());
+        $name = e($account->account_name);
+        $number = e($account->account_number);
+
+        return "{$label}<br><span class=\"text-gray-600 dark:text-gray-400\">{$name} · {$number}</span><br><a href=\"{$manageUrl}\" class=\"underline font-medium\">Manage bank accounts</a>";
     }
 }

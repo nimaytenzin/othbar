@@ -20,6 +20,15 @@ class RolePermissionSeeder extends Seeder
         'catalog.manage',
         'content.manage',
         'settings.manage',
+        'settings.business',
+        'settings.tax',
+        'settings.bank_accounts',
+        'customers.view',
+        'customers.manage',
+        'invoices.view',
+        'invoices.manage',
+        'payments.receive',
+        'inventory.view',
         'reports.view',
         'users.manage',
     ];
@@ -32,6 +41,10 @@ class RolePermissionSeeder extends Seeder
         'orders.create',
         'orders.fulfill',
         'products.view',
+        'customers.view',
+        'invoices.view',
+        'payments.receive',
+        'inventory.view',
     ];
 
     public function run(): void

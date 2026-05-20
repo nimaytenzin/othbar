@@ -31,15 +31,15 @@ class ManagePaymentSettings extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
 
-    protected static ?string $navigationLabel = 'Payment & GST';
+    protected static ?string $navigationLabel = 'Storefront payments';
 
-    protected static ?string $title = 'Payment & GST';
+    protected static ?string $title = 'Storefront payments';
 
     protected static ?string $slug = 'payment-settings';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Store';
+    protected static string|UnitEnum|null $navigationGroup = 'Settings';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 4;
 
     /**
      * @var array<string, mixed>|null
@@ -74,10 +74,7 @@ class ManagePaymentSettings extends Page
     protected function fillForm(): void
     {
         $this->form->fill(
-            $this->settings->only([
-                'gst_percentage',
-                'payment_merchant_account',
-            ])
+            $this->settings->only(['pickup_address_label'])
         );
     }
 

@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
+use App\Enums\ShippingStatus;
 use App\Models\Order;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
@@ -14,9 +17,21 @@ class OrderInfolist
             ->components([
                 TextEntry::make('number')
                     ->label('Order #'),
-                TextEntry::make('status')->badge(),
-                TextEntry::make('payment_status')->badge(),
-                TextEntry::make('shipping_status')->badge(),
+                TextEntry::make('status')
+                    ->badge()
+                    ->formatStateUsing(fn (OrderStatus $state): string => $state->getLabel())
+                    ->color(fn (OrderStatus $state): string => $state->getColor())
+                    ->icon(fn (OrderStatus $state): ?string => $state->getIcon()),
+                TextEntry::make('payment_status')
+                    ->badge()
+                    ->formatStateUsing(fn (PaymentStatus $state): string => $state->getLabel())
+                    ->color(fn (PaymentStatus $state): string => $state->getColor())
+                    ->icon(fn (PaymentStatus $state): ?string => $state->getIcon()),
+                TextEntry::make('shipping_status')
+                    ->badge()
+                    ->formatStateUsing(fn (ShippingStatus $state): string => $state->getLabel())
+                    ->color(fn (ShippingStatus $state): string => $state->getColor())
+                    ->icon(fn (ShippingStatus $state): ?string => $state->getIcon()),
                 TextEntry::make('fulfillment_method')->badge(),
                 TextEntry::make('total_minor')
                     ->label('Total')

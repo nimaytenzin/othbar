@@ -18,7 +18,13 @@
         @endif
         @if(($pricing['gst_minor'] ?? 0) > 0)
             <div>
-                <dt>GST ({{ rtrim(rtrim(number_format($pricing['gst_percentage'] ?? 0, 2), '0'), '.') }}%)</dt>
+                <dt>
+                    @if(($pricing['show_tax_rate'] ?? true) && ($pricing['effective_tax_rate'] ?? $pricing['gst_percentage'] ?? 0) > 0)
+                        GST ({{ rtrim(rtrim(number_format($pricing['effective_tax_rate'] ?? $pricing['gst_percentage'], 2), '0'), '.') }}%)
+                    @else
+                        GST
+                    @endif
+                </dt>
                 <dd>Nu. {{ number_format($pricing['gst_minor'] / 100, 2) }}</dd>
             </div>
         @endif

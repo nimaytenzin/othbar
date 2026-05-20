@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\SiteSetting;
 use App\Policies\OrderPolicy;
 use App\Policies\ProductPolicy;
+use App\Services\InvoiceService;
 use App\Services\StockService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
@@ -36,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
             if ($order->isDirty('status') && $order->status === OrderStatus::Completed) {
                 $order->shipping_status = ShippingStatus::Delivered;
                 app(StockService::class)->decrementForOrder($order);
+                app(InvoiceService::class)->createFromOrder($order->fresh(['items.product', 'shippingAddress']));
             }
 
             if ($order->isDirty('status') && $order->status === OrderStatus::Cancelled) {

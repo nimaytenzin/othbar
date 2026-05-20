@@ -14,15 +14,18 @@
 
     <div class="oth-counter-review__grid">
         <section class="oth-card">
-            <h4 class="oth-counter-review__heading">Products</h4>
+            <h4 class="oth-counter-review__heading">Order lines</h4>
             @if($cartLines === [])
-                <p class="oth-counter-review__empty">No products added.</p>
+                <p class="oth-counter-review__empty">No lines added.</p>
             @else
                 <ul class="oth-counter-review__lines">
                     @foreach($cartLines as $line)
                         <li>
                             <div>
                                 <strong>{{ $line['name'] }}</strong>
+                                @if($line['is_custom'] ?? false)
+                                    <span class="oth-counter-review__meta">Custom charge · </span>
+                                @endif
                                 <span class="oth-counter-review__meta">Qty {{ $line['quantity'] }} · Nu. {{ number_format($line['unit_price_minor'] / 100, 2) }} each</span>
                             </div>
                             <strong>Nu. {{ number_format($line['line_total_minor'] / 100, 2) }}</strong>

@@ -5,7 +5,7 @@
 @section('content')
 
 {{-- Hero --}}
-<section class="hero-gradient druk-pattern sf-hero" style="padding: 0;">
+<section class="hero-gradient sf-hero" style="padding: 0;">
     <div style="position: absolute; right: 0; top: 0; bottom: 0; width: 40%; background: rgba(212,168,67,0.05);"></div>
     <div class="sf-container sf-hero__inner" style="position: relative;">
         <p class="section-label" style="color: #D4A843; margin-bottom: 1rem;">{{ $site->story_hero_label }}</p>
@@ -34,7 +34,6 @@
         </div>
         <div style="position: relative;">
             <div style="aspect-ratio: 3/4; background: linear-gradient(135deg, #C4843C 0%, #8B6914 100%); position: relative; overflow: hidden;">
-                <div class="druk-pattern" style="position: absolute; inset: 0; opacity: 0.3;"></div>
                 <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 3rem;">
                     <div style="text-align: center;">
                         <svg width="80" height="80" viewBox="0 0 80 80" fill="none" opacity="0.5">

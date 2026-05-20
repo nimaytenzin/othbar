@@ -98,12 +98,28 @@ class ProductForm
                                 TextInput::make('sku')
                                     ->maxLength(255)
                                     ->nullable(),
+                                Toggle::make('track_inventory')
+                                    ->label('Track inventory')
+                                    ->default(false),
                                 TextInput::make('stock_quantity')
                                     ->numeric()
                                     ->default(0)
                                     ->minValue(0)
                                     ->label('Stock quantity'),
+                                TextInput::make('reorder_level')
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->label('Reorder level')
+                                    ->nullable(),
                             ]),
+                        Select::make('tax_classification_id')
+                            ->label('GST classification')
+                            ->relationship('taxClassification', 'name', fn ($query) => $query->where('is_active', true)->orderBy('sort_order'))
+                            ->searchable()
+                            ->preload()
+                            ->nullable()
+                            ->helperText('Uses the site default classification when empty.')
+                            ->columnSpanFull(),
                         TextInput::make('price_minor')
                             ->numeric()
                             ->required()

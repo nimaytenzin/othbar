@@ -1594,3 +1594,117 @@
         grid-template-columns: 1fr 1fr;
     }
 }
+
+/* Resource list pages — tabs, filters, and table in one card */
+.oth-orders-list-page .oth-orders-list-panel.fi-sc-section > .fi-section,
+.oth-invoices-list-page .oth-invoices-list-panel.fi-sc-section > .fi-section {
+    overflow: hidden;
+}
+
+.oth-orders-list-page .oth-orders-list-panel .fi-section-content,
+.oth-invoices-list-page .oth-invoices-list-panel .fi-section-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+}
+
+.oth-orders-list-page .oth-orders-list-tabs.fi-sc-tabs,
+.oth-invoices-list-page .oth-invoices-list-tabs.fi-sc-tabs {
+    padding: 0.75rem 1rem 0;
+    margin: 0;
+    border-bottom: 1px solid rgb(229 231 235);
+    background: rgb(249 250 251);
+}
+
+.dark .oth-orders-list-page .oth-orders-list-tabs.fi-sc-tabs,
+.dark .oth-invoices-list-page .oth-invoices-list-tabs.fi-sc-tabs {
+    border-bottom-color: rgb(55 65 81);
+    background: rgb(17 24 39 / 0.5);
+}
+
+.oth-orders-list-page .oth-orders-list-tabs .fi-tabs,
+.oth-invoices-list-page .oth-invoices-list-tabs .fi-tabs {
+    margin: 0;
+    box-shadow: none;
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.oth-orders-list-page .oth-orders-list-panel .fi-ta-ctn,
+.oth-invoices-list-page .oth-invoices-list-panel .fi-ta-ctn {
+    border-radius: 0;
+    box-shadow: none;
+    --tw-ring-shadow: 0 0 #0000;
+    border: none;
+}
+
+.oth-orders-list-page .oth-orders-list-panel .fi-ta-header-ctn,
+.oth-invoices-list-page .oth-invoices-list-panel .fi-ta-header-ctn {
+    padding-inline: 1rem;
+    padding-top: 1rem;
+}
+
+.oth-orders-list-page .oth-orders-list-panel .fi-ta-header-toolbar,
+.oth-invoices-list-page .oth-invoices-list-panel .fi-ta-header-toolbar {
+    padding-inline: 1rem;
+}
+
+.oth-orders-list-page .oth-orders-list-panel .fi-ta-filters-above-content-ctn,
+.oth-invoices-list-page .oth-invoices-list-panel .fi-ta-filters-above-content-ctn {
+    padding: 0.75rem 1rem;
+    margin: 0;
+    border-bottom: 1px solid rgb(229 231 235);
+    background: rgb(255 255 255);
+}
+
+.dark .oth-orders-list-page .oth-orders-list-panel .fi-ta-filters-above-content-ctn,
+.dark .oth-invoices-list-page .oth-invoices-list-panel .fi-ta-filters-above-content-ctn {
+    border-bottom-color: rgb(55 65 81);
+    background: transparent;
+}
+
+.oth-orders-list-page .oth-orders-list-panel .fi-ta-content-ctn,
+.oth-invoices-list-page .oth-invoices-list-panel .fi-ta-content-ctn {
+    border-radius: 0;
+}
+
+.oth-orders-list-page .oth-orders-list-panel .fi-ta-table-ctn,
+.oth-invoices-list-page .oth-invoices-list-panel .fi-ta-table-ctn {
+    border-radius: 0;
+}
+
+.oth-orders-list-page .oth-orders-list-panel .fi-ta-pagination-ctn,
+.oth-invoices-list-page .oth-invoices-list-panel .fi-ta-pagination-ctn {
+    padding-inline: 1rem;
+    padding-bottom: 0.75rem;
+}
+
+/* Invoices list */
+.oth-invoices-list-page .oth-invoices-list-tabs.fi-sc-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.oth-invoices-list-page .oth-invoices-list-tabs .fi-tabs-item {
+    white-space: nowrap;
+}
+
+.oth-invoices-list-page .oth-invoices-list-panel .fi-ta-filters-above-content-ctn {
+    background: rgb(249 250 251);
+}
+
+.oth-invoices-list-page .oth-invoices-list-panel .fi-ta-filters-above-content-ctn .fi-fo-field-wrp-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.oth-invoices-list-page .oth-invoices-list-panel .fi-ta-row--overdue {
+    background: rgb(254 242 242 / 0.45);
+}
+
+.oth-invoices-list-page .oth-invoices-list-panel .fi-ta-record {
+    transition: background-color 0.15s ease;
+}

@@ -24,9 +24,9 @@ enum OrderStatus: string
     public function getColor(): string
     {
         return match ($this) {
-            self::New => 'gray',
-            self::Processing => 'warning',
-            self::Shipped => 'info',
+            self::New => 'warning',
+            self::Processing => 'info',
+            self::Shipped => 'primary',
             self::Completed => 'success',
             self::Cancelled => 'danger',
         };

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Product extends Model implements HasMedia
 {
@@ -25,6 +26,9 @@ class Product extends Model implements HasMedia
         'is_visible',
         'price_minor',
         'currency_code',
+        'track_inventory',
+        'tax_classification_id',
+        'reorder_level',
     ];
 
     protected function casts(): array
@@ -32,6 +36,7 @@ class Product extends Model implements HasMedia
         return [
             'allow_backorder' => 'boolean',
             'is_visible' => 'boolean',
+            'track_inventory' => 'boolean',
         ];
     }
 
@@ -45,9 +50,19 @@ class Product extends Model implements HasMedia
         return Attribute::get(fn (): int => $this->stock_quantity);
     }
 
-    public function brand(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
+    }
+
+    public function taxClassification(): BelongsTo
+    {
+        return $this->belongsTo(TaxClassification::class);
+    }
+
+    public function inventoryMovements(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class);
     }
 
     public function categories(): BelongsToMany
@@ -74,7 +89,11 @@ class Product extends Model implements HasMedia
     {
         $url = $this->getFirstMediaUrl('thumbnail') ?: $this->getFirstMediaUrl('uploads');
 
-        return $url !== '' ? $url : null;
+        if ($url === '') {
+            return null;
+        }
+
+        return str_starts_with($url, 'http') ? $url : url($url);
     }
 
     /**

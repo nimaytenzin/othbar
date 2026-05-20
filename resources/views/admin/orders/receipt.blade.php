@@ -48,6 +48,31 @@
             margin: 0;
         }
 
+        .receipt__legal-name {
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.35;
+            margin: 0;
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        .receipt__legal-meta {
+            margin: 0.35rem 0 0;
+            font-size: 10px;
+            color: #222;
+            line-height: 1.5;
+        }
+
+        .receipt__legal-meta p {
+            margin: 0;
+        }
+
+        .receipt__legal-meta p + p {
+            margin-top: 0.15rem;
+        }
+
         .receipt__slogan {
             margin: 0.2rem 0 0;
             font-family: ui-sans-serif, system-ui, sans-serif;
@@ -277,7 +302,25 @@
 <body>
     <div class="receipt">
         <header class="receipt__header">
-            <h1 class="receipt__brand">{{ $site->company_name }}</h1>
+            @if(filled($site->business_name))
+                <h1 class="receipt__legal-name">{{ $site->business_name }}</h1>
+                @if(filled($site->gst_tpn))
+                    <div class="receipt__legal-meta">
+                        <p><strong>GST TPN:</strong> {{ $site->gst_tpn }}</p>
+                        @if(filled($site->business_licence_number))
+                            <p><strong>Licence:</strong> {{ $site->business_licence_number }}</p>
+                        @endif
+                        @if(filled($site->businessAddressBlock()))
+                            <p style="white-space: pre-line;">{{ $site->businessAddressBlock() }}</p>
+                        @endif
+                        @if(filled($site->business_phone))
+                            <p>{{ $site->business_phone }}</p>
+                        @endif
+                    </div>
+                @endif
+            @else
+                <h1 class="receipt__brand">{{ $site->company_name }}</h1>
+            @endif
             @if(filled($site->company_subtitle))
                 <p class="receipt__slogan">{{ $site->company_subtitle }}</p>
             @endif
@@ -393,7 +436,13 @@
             @endif
             @if($pricing['gst_minor'] > 0)
                 <div class="row">
-                    <span>GST ({{ rtrim(rtrim(number_format($pricing['gst_percentage'], 2), '0'), '.') }}%)</span>
+                    <span>
+                        @if(($pricing['show_tax_rate'] ?? true) && ($pricing['effective_tax_rate'] ?? $pricing['gst_percentage'] ?? 0) > 0)
+                            GST ({{ rtrim(rtrim(number_format($pricing['effective_tax_rate'] ?? $pricing['gst_percentage'], 2), '0'), '.') }}%)
+                        @else
+                            GST
+                        @endif
+                    </span>
                     <span>Nu. {{ number_format($pricing['gst_minor'] / 100, 2) }}</span>
                 </div>
             @endif
@@ -438,7 +487,11 @@
                 </p>
             @endif
             <p style="margin-top: 0.65rem; color: #666;">
-                {{ $site->company_name }} · {{ now()->format('Y') }}
+                {{ filled($site->business_name) ? $site->business_name : $site->company_name }}
+                @if(filled($site->gst_tpn))
+                    · GST TPN {{ $site->gst_tpn }}
+                @endif
+                · {{ now()->format('Y') }}
             </p>
         </footer>
     </div>

@@ -10,7 +10,7 @@ use App\Models\Order;
 use App\Models\OrderAddress;
 use App\Models\OrderItem;
 use App\Models\Product;
-use App\Models\SiteSetting;
+use App\Models\TaxClassification;
 use App\Models\User;
 use App\Support\PaymentMethods;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +20,7 @@ class CounterOrderService
 {
     public function __construct(
         private readonly StockService $stockService,
+        private readonly TaxCalculationService $taxCalculation,
     ) {}
 
     /**
@@ -31,7 +32,14 @@ class CounterOrderService
      *     notes?: string|null,
      *     coupon_code?: string|null,
      *     manual_discount?: float|int|string|null,
-     *     items: list<array{product_id: int, quantity: int}>
+     *     items: list<array{product_id: int, quantity: int}>,
+     *     custom_lines?: list<array{
+     *         description: string,
+     *         quantity: int,
+     *         unit_price_minor: int,
+     *         discount_minor?: int,
+     *         tax_classification_id?: int|null
+     *     }>
      * }  $data
      */
     public function createPending(array $data, User $user): Order
@@ -48,7 +56,8 @@ class CounterOrderService
      *     notes?: string|null,
      *     coupon_code?: string|null,
      *     manual_discount?: float|int|string|null,
-     *     items: list<array{product_id: int, quantity: int}>
+     *     items: list<array{product_id: int, quantity: int}>,
+     *     custom_lines?: list<array<string, mixed>>
      * }  $data
      */
     public function createAndComplete(
@@ -95,10 +104,13 @@ class CounterOrderService
         }
 
         $this->stockService->assertLineItemsAvailable(
-            $order->items->map(fn (OrderItem $item): array => [
-                'product_id' => (int) $item->product_id,
-                'quantity' => (int) $item->quantity,
-            ])->all(),
+            $order->items
+                ->filter(fn (OrderItem $item): bool => $item->product_id !== null)
+                ->map(fn (OrderItem $item): array => [
+                    'product_id' => (int) $item->product_id,
+                    'quantity' => (int) $item->quantity,
+                ])
+                ->all(),
         );
 
         DB::transaction(function () use ($order, $paymentMethod, $paymentReference, $paymentBank): void {
@@ -161,21 +173,25 @@ class CounterOrderService
      *     notes?: string|null,
      *     coupon_code?: string|null,
      *     manual_discount?: float|int|string|null,
-     *     items: list<array{product_id: int, quantity: int}>
+     *     items: list<array{product_id: int, quantity: int}>,
+     *     custom_lines?: list<array<string, mixed>>
      * }  $data
      */
     private function createOrder(array $data, User $user): Order
     {
-        $lineItems = $this->normalizeLineItems($data['items'] ?? []);
+        $lineItems = $this->normalizeProductLineItems($data['items'] ?? []);
+        $customLines = $this->normalizeCustomLineItems($data['custom_lines'] ?? []);
+        $this->assertHasLineItems($lineItems, $customLines);
         $this->stockService->assertLineItemsAvailable($lineItems);
 
         $pricing = $this->calculateTotals(
             $lineItems,
+            $customLines,
             $data['coupon_code'] ?? null,
             $this->manualDiscountMinor($data['manual_discount'] ?? null),
         );
 
-        return DB::transaction(function () use ($data, $user, $lineItems, $pricing): Order {
+        return DB::transaction(function () use ($data, $user, $lineItems, $customLines, $pricing): Order {
             $address = OrderAddress::query()->create([
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
@@ -206,7 +222,8 @@ class CounterOrderService
                     'coupon_code' => $pricing['coupon_code'],
                     'manual_discount_minor' => $pricing['manual_discount_minor'],
                     'gst_minor' => $pricing['gst_minor'],
-                    'gst_percentage' => $pricing['gst_percentage'],
+                    'effective_tax_rate' => $pricing['effective_tax_rate'],
+                    'tax_breakdown' => $pricing['tax_breakdown'],
                 ],
                 'shipping_address_id' => $address->id,
                 'created_by_user_id' => $user->id,
@@ -221,7 +238,22 @@ class CounterOrderService
                     'name' => $product->name,
                     'quantity' => $lineItem['quantity'],
                     'unit_price_minor' => $product->price_minor,
+                    'discount_minor' => 0,
+                    'tax_classification_id' => $product->tax_classification_id,
                     'sku' => $product->sku ?? '',
+                ]);
+            }
+
+            foreach ($customLines as $line) {
+                OrderItem::query()->create([
+                    'order_id' => $order->id,
+                    'product_id' => null,
+                    'name' => $line['description'],
+                    'quantity' => $line['quantity'],
+                    'unit_price_minor' => $line['unit_price_minor'],
+                    'discount_minor' => $line['discount_minor'],
+                    'tax_classification_id' => $line['tax_classification_id'],
+                    'sku' => null,
                 ]);
             }
 
@@ -233,9 +265,9 @@ class CounterOrderService
      * @param  list<array{product_id?: int|null, quantity?: int|null}>  $items
      * @return list<array{product_id: int, quantity: int}>
      */
-    private function normalizeLineItems(array $items): array
+    private function normalizeProductLineItems(array $items): array
     {
-        $lineItems = collect($items)
+        return collect($items)
             ->filter(fn (array $item): bool => filled($item['product_id'] ?? null))
             ->map(fn (array $item): array => [
                 'product_id' => (int) $item['product_id'],
@@ -243,39 +275,91 @@ class CounterOrderService
             ])
             ->values()
             ->all();
-
-        if ($lineItems === []) {
-            throw ValidationException::withMessages([
-                'items' => 'Add at least one product to the order.',
-            ]);
-        }
-
-        return $lineItems;
     }
 
     /**
-     * @param  list<array{product_id: int, quantity: int}>  $lineItems
+     * @param  list<array<string, mixed>>  $lines
+     * @return list<array{
+     *     description: string,
+     *     quantity: int,
+     *     unit_price_minor: int,
+     *     discount_minor: int,
+     *     tax_classification_id: int|null
+     * }>
+     */
+    private function normalizeCustomLineItems(array $lines): array
+    {
+        return collect($lines)
+            ->filter(fn (array $line): bool => filled($line['description'] ?? null))
+            ->map(function (array $line): array {
+                $description = trim((string) ($line['description'] ?? ''));
+
+                if ($description === '') {
+                    throw ValidationException::withMessages([
+                        'custom_lines' => 'Each custom line needs a description.',
+                    ]);
+                }
+
+                $unitPrice = (int) ($line['unit_price_minor'] ?? 0);
+
+                if ($unitPrice < 1) {
+                    throw ValidationException::withMessages([
+                        'custom_lines' => "“{$description}” needs a unit price greater than zero.",
+                    ]);
+                }
+
+                return [
+                    'description' => $description,
+                    'quantity' => max(1, (int) ($line['quantity'] ?? 1)),
+                    'unit_price_minor' => $unitPrice,
+                    'discount_minor' => max(0, (int) ($line['discount_minor'] ?? 0)),
+                    'tax_classification_id' => filled($line['tax_classification_id'] ?? null)
+                        ? (int) $line['tax_classification_id']
+                        : null,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  list<array{product_id: int, quantity: int}>  $productLines
+     * @param  list<array{description: string, quantity: int, unit_price_minor: int, discount_minor: int, tax_classification_id: int|null}>  $customLines
+     */
+    private function assertHasLineItems(array $productLines, array $customLines): void
+    {
+        if ($productLines === [] && $customLines === []) {
+            throw ValidationException::withMessages([
+                'items' => 'Add at least one product or custom line to the order.',
+            ]);
+        }
+    }
+
+    /**
+     * @param  list<array{product_id: int, quantity: int}>  $productLines
+     * @param  list<array{description: string, quantity: int, unit_price_minor: int, discount_minor: int, tax_classification_id: int|null}>  $customLines
      * @return array{
      *     subtotal_minor: int,
      *     discount_minor: int,
      *     manual_discount_minor: int,
      *     coupon_code: ?string,
      *     gst_minor: int,
-     *     gst_percentage: float,
+     *     effective_tax_rate: float,
+     *     tax_breakdown: list<array>,
      *     total_minor: int
      * }
      */
     public function calculateTotals(
-        array $lineItems,
+        array $productLines,
+        array $customLines = [],
         ?string $couponCode = null,
         int $manualDiscountMinor = 0,
     ): array {
-        $subtotalMinor = 0;
+        $this->assertHasLineItems($productLines, $customLines);
 
-        foreach ($lineItems as $lineItem) {
-            $product = Product::query()->findOrFail($lineItem['product_id']);
-            $subtotalMinor += $product->price_minor * $lineItem['quantity'];
-        }
+        $lineInputs = $this->buildTaxLineInputs($productLines, $customLines);
+        $summary = $this->taxCalculation->summarizeLines($lineInputs);
+        $subtotalMinor = $summary['subtotal_minor'];
 
         $manualDiscountMinor = max(0, min($subtotalMinor, $manualDiscountMinor));
         $couponDiscount = 0;
@@ -298,22 +382,101 @@ class CounterOrderService
         }
 
         $discountMinor = min($subtotalMinor, $manualDiscountMinor + $couponDiscount);
-        $taxableMinor = max(0, $subtotalMinor - $discountMinor);
 
-        $gstPercentage = max(0, min(100, (float) (SiteSetting::current()->gst_percentage ?? 0)));
-        $gstMinor = $gstPercentage > 0
-            ? (int) floor($taxableMinor * $gstPercentage / 100)
-            : 0;
+        if ($discountMinor > 0 && $subtotalMinor > 0) {
+            $ratio = min(1, $discountMinor / $subtotalMinor);
+            $summary['discount_minor'] = $discountMinor;
+            $summary['tax_minor'] = (int) round($summary['tax_minor'] * (1 - $ratio));
+            $summary['total_minor'] = $summary['subtotal_minor'] - $discountMinor + $summary['tax_minor'];
+        }
+
+        $taxableMinor = max(0, $subtotalMinor - $discountMinor);
+        $effectiveTaxRate = $taxableMinor > 0
+            ? round(($summary['tax_minor'] / $taxableMinor) * 100, 2)
+            : 0.0;
 
         return [
-            'subtotal_minor' => $subtotalMinor,
+            'subtotal_minor' => $summary['subtotal_minor'],
             'discount_minor' => $discountMinor,
             'manual_discount_minor' => $manualDiscountMinor,
             'coupon_code' => $resolvedCouponCode,
-            'gst_minor' => $gstMinor,
-            'gst_percentage' => $gstPercentage,
-            'total_minor' => $taxableMinor + $gstMinor,
+            'gst_minor' => $summary['tax_minor'],
+            'effective_tax_rate' => $effectiveTaxRate,
+            'tax_breakdown' => $this->buildTaxBreakdownFromSummary($summary['lines'], $discountMinor, $subtotalMinor),
+            'total_minor' => $summary['total_minor'],
         ];
+    }
+
+    /**
+     * @param  list<array{product_id: int, quantity: int}>  $productLines
+     * @param  list<array{description: string, quantity: int, unit_price_minor: int, discount_minor: int, tax_classification_id: int|null}>  $customLines
+     * @return list<array<string, mixed>>
+     */
+    private function buildTaxLineInputs(array $productLines, array $customLines): array
+    {
+        $lineInputs = [];
+
+        foreach ($productLines as $lineItem) {
+            $product = Product::query()->findOrFail($lineItem['product_id']);
+
+            $lineInputs[] = [
+                'unit_price_minor' => $product->price_minor,
+                'quantity' => $lineItem['quantity'],
+                'discount_minor' => 0,
+                'product' => $product,
+            ];
+        }
+
+        foreach ($customLines as $line) {
+            $classification = $line['tax_classification_id'] !== null
+                ? TaxClassification::query()->find($line['tax_classification_id'])
+                : null;
+
+            $lineInputs[] = [
+                'unit_price_minor' => $line['unit_price_minor'],
+                'quantity' => $line['quantity'],
+                'discount_minor' => $line['discount_minor'],
+                'tax_classification' => $classification,
+            ];
+        }
+
+        return $lineInputs;
+    }
+
+    /**
+     * @param  list<array>  $computedLines
+     * @return list<array{code: string, name: string, rate_percent: float, tax_minor: int}>
+     */
+    private function buildTaxBreakdownFromSummary(array $computedLines, int $discountMinor, int $subtotalMinor): array
+    {
+        $ratio = ($discountMinor > 0 && $subtotalMinor > 0)
+            ? min(1, $discountMinor / $subtotalMinor)
+            : 0;
+
+        $byCode = [];
+
+        foreach ($computedLines as $line) {
+            $classification = $line['tax_classification'] ?? ($line['product']?->taxClassification);
+            $code = $classification?->code ?? 'UNKNOWN';
+            $taxMinor = (int) round(((int) ($line['tax_minor'] ?? 0)) * (1 - $ratio));
+
+            if ($taxMinor <= 0) {
+                continue;
+            }
+
+            if (! isset($byCode[$code])) {
+                $byCode[$code] = [
+                    'code' => $code,
+                    'name' => $classification?->name ?? $code,
+                    'rate_percent' => (float) ($line['tax_rate_percent'] ?? 0),
+                    'tax_minor' => 0,
+                ];
+            }
+
+            $byCode[$code]['tax_minor'] += $taxMinor;
+        }
+
+        return array_values($byCode);
     }
 
     private function manualDiscountMinor(mixed $manualDiscount): int

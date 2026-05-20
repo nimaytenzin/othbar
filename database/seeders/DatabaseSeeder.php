@@ -14,7 +14,9 @@ class DatabaseSeeder extends Seeder
         $this->call(RolePermissionSeeder::class);
         $this->call(AdminUserSeeder::class);
         $this->call(StaffUserSeeder::class);
+        $this->call(TaxClassificationSeeder::class);
         $this->call(OthbarProductSeeder::class);
         $this->call(SiteSettingSeeder::class);
+        $this->call(BankAccountFromSettingsSeeder::class);
     }
 }

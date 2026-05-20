@@ -177,53 +177,7 @@
                         @endif
                     </div>
                 </form>
-                @else
-                <p style="font-size: 0.72rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: #1E3A2A; margin-bottom: 0.875rem;">Quantity</p>
-                <div class="sf-qty-row">
-                    <div style="display: flex; align-items: center; border: 1px solid #D8CCAD;">
-                        <button style="padding: 0.75rem 1rem; background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #1E3A2A;" onclick="const q=document.getElementById('qty');q.value=Math.max(1,parseInt(q.value)-1)">−</button>
-                        <input id="qty" type="number" value="1" min="1" style="width: 50px; text-align: center; border: none; background: none; font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: #1E3A2A; outline: none;">
-                        <button style="padding: 0.75rem 1rem; background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #1E3A2A;" onclick="const q=document.getElementById('qty');q.value=parseInt(q.value)+1">+</button>
-                    </div>
-                    <button class="btn-primary" style="flex: 1; text-decoration: none; justify-content: center;">
-                        Add to basket
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-                    </button>
-                </div>
                 @endisset
-            </div>
-
-            <div class="gold-line" style="margin-bottom: 2rem;"></div>
-
-            {{-- Product attributes --}}
-            <div class="sf-grid-2" style="margin-bottom: 2rem;">
-                @foreach([
-                    ['label' => 'Certification', 'value' => 'Bhutan Organic #BT-2019'],
-                    ['label' => 'Farm', 'value' => 'Othbar Community Farm'],
-                    ['label' => 'Altitude', 'value' => '2,400 – 2,800m'],
-                    ['label' => 'Harvest', 'value' => 'October – November'],
-                    ['label' => 'Processing', 'value' => 'Sun-dried, stone-milled'],
-                    ['label' => 'Storage', 'value' => 'Cool, dry place — 12 months'],
-                ] as $attr)
-                <div style="padding: 1rem; background: #EDE5D0; border-left: 2px solid #C4843C;">
-                    <p style="font-size: 0.65rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(30,58,42,0.5); margin-bottom: 0.25rem;">{{ $attr['label'] }}</p>
-                    <p style="font-size: 0.85rem; color: #1E3A2A; font-weight: 400;">{{ $attr['value'] }}</p>
-                </div>
-                @endforeach
-            </div>
-
-            {{-- Trust signals --}}
-            <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
-                @foreach([
-                    ['icon' => '🌿', 'text' => 'Zero pesticides'],
-                    ['icon' => '🏔', 'text' => 'High-altitude grown'],
-                    ['icon' => '📦', 'text' => 'Eco packaging'],
-                ] as $signal)
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 1rem;">{{ $signal['icon'] }}</span>
-                    <span style="font-size: 0.78rem; color: rgba(30,58,42,0.6); font-weight: 300;">{{ $signal['text'] }}</span>
-                </div>
-                @endforeach
             </div>
 
         </div>
@@ -251,46 +205,26 @@
     </div>
 </div>
 
-{{-- Related products --}}
-@if(isset($related) && $related->isNotEmpty() || !isset($related))
+@if($related->isNotEmpty())
 <div style="max-width: 1280px; margin: 0 auto; padding: 5rem 2rem;">
     <div style="margin-bottom: 2.5rem; display: flex; justify-content: space-between; align-items: center;">
         <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 2rem; color: #1E3A2A;">You may also like</h2>
-        <a href="{{ route('shop') }}" style="font-size: 0.78rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #C4843C; text-decoration: none; border-bottom: 1px solid #C4843C; padding-bottom: 2px;">View all</a>
+        <a href="{{ route('shop') }}" class="sf-link-arrow">View all</a>
     </div>
     <div class="sf-grid-4">
-        @isset($related)
-            @foreach($related->take(4) as $rel)
-            <div class="product-card">
-                <a href="{{ route('product', $rel->slug) }}" style="text-decoration: none; display: block;">
-                    <div class="product-image-frame product-image-frame--square" style="margin-bottom: 1rem;">
-                        <x-product-image :product="$rel" />
-                    </div>
-                    <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; color: #1E3A2A; margin-bottom: 0.35rem;">{{ $rel->name }}</h3>
-                    @if($rel->prices->first())
-                    <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; font-weight: 600; color: #1E3A2A;">Nu. {{ number_format($rel->prices->first()->amount / 100) }}</span>
-                    @endif
-                </a>
-            </div>
-            @endforeach
-        @else
-            @foreach([
-                ['name' => 'Wild Forest Honey', 'price' => 'Nu. 650', 'slug' => 'wild-forest-honey'],
-                ['name' => 'Highland Buckwheat', 'price' => 'Nu. 180', 'slug' => 'highland-buckwheat'],
-                ['name' => 'Himalayan Nettle Tea', 'price' => 'Nu. 340', 'slug' => 'nettle-tea'],
-                ['name' => 'Dried Chili Peppers', 'price' => 'Nu. 220', 'slug' => 'dried-chili'],
-            ] as $rel)
-            <div class="product-card">
-                <a href="{{ route('product', $rel['slug']) }}" style="text-decoration: none; display: block;">
-                    <div style="aspect-ratio: 1; background: #D8CCAD; margin-bottom: 1rem; overflow: hidden;">
-                        <div class="img-placeholder" style="width: 100%; height: 100%;"></div>
-                    </div>
-                    <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; color: #1E3A2A; margin-bottom: 0.35rem;">{{ $rel['name'] }}</h3>
-                    <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; font-weight: 600; color: #1E3A2A;">{{ $rel['price'] }}</span>
-                </a>
-            </div>
-            @endforeach
-        @endisset
+        @foreach($related->take(4) as $rel)
+        <div class="product-card">
+            <a href="{{ route('product', $rel->slug) }}" style="text-decoration: none; display: block;">
+                <div class="product-image-frame product-image-frame--square" style="margin-bottom: 1rem;">
+                    <x-product-image :product="$rel" />
+                </div>
+                <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; color: #1E3A2A; margin-bottom: 0.35rem;">{{ $rel->name }}</h3>
+                @if($rel->prices->first())
+                <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; font-weight: 600; color: #1E3A2A;">Nu. {{ number_format($rel->prices->first()->amount / 100) }}</span>
+                @endif
+            </a>
+        </div>
+        @endforeach
     </div>
 </div>
 @endif

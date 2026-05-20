@@ -4,8 +4,10 @@ namespace App\Filament\Resources\Orders\Pages;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
+use App\Services\InvoiceService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
@@ -94,6 +96,21 @@ class ViewOrder extends ViewRecord
                 ->icon('heroicon-o-printer')
                 ->url(fn (Order $record): string => route('filament.admin.orders.receipt', $record).'?autoprint=1')
                 ->openUrlInNewTab(),
+            Action::make('invoice')
+                ->label('View invoice')
+                ->icon('heroicon-o-document-text')
+                ->visible(fn (Order $record): bool => $record->status === OrderStatus::Completed)
+                ->url(function (Order $record): string {
+                    $record->load(['items.product', 'shippingAddress']);
+                    $invoiceId = $record->invoice_id;
+
+                    if ($invoiceId === null) {
+                        $invoice = app(InvoiceService::class)->createFromOrder($record);
+                        $invoiceId = $invoice->id;
+                    }
+
+                    return InvoiceResource::getUrl('view', ['record' => $invoiceId]);
+                }),
             EditAction::make(),
         ];
     }

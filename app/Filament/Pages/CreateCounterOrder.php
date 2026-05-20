@@ -2,9 +2,12 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\Invoices\Support\InvoiceLinePreview;
+use App\Filament\Schemas\CounterOrderCustomLineForm;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Product;
 use App\Services\CounterOrderService;
+use App\Services\TaxCalculationService;
 use App\Support\PaymentMethods;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -17,10 +20,10 @@ use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\View as SchemaView;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Components\Wizard\Step;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
@@ -67,6 +70,7 @@ class CreateCounterOrder extends Page
     {
         $this->form->fill([
             'items' => [],
+            'custom_lines' => [],
             'payment_method' => PaymentMethods::MODE_CASH,
             'payment_bank' => null,
             'manual_discount' => null,
@@ -101,19 +105,21 @@ class CreateCounterOrder extends Page
                         ->description('Add items and apply discounts')
                         ->icon(Heroicon::OutlinedShoppingBag)
                         ->afterValidation(function (): void {
-                            if ($this->getCartLines() === []) {
+                            if ($this->getOrderLinesTableRows() === []) {
                                 throw ValidationException::withMessages([
-                                    'items' => 'Add at least one product to the order.',
+                                    'items' => 'Add at least one product or custom line to the order.',
                                 ]);
                             }
                         })
                         ->schema([
                             Hidden::make('items')
                                 ->default([]),
+                            Hidden::make('custom_lines')
+                                ->default([]),
                             SchemaView::make('product_list')
                                 ->view('filament.counter-order.product-list')
                                 ->viewData(fn (): array => [
-                                    'cartLines' => $this->getCartLines(),
+                                    'orderLineRows' => $this->getOrderLinesTableRows(),
                                     'productSearch' => $this->productSearch,
                                     'productSearchResults' => $this->getProductSearchResults(),
                                     'productOptions' => $this->getProductOptions(),
@@ -205,7 +211,7 @@ class CreateCounterOrder extends Page
                                 ->view('filament.counter-order.review')
                                 ->viewData(fn (): array => [
                                     'pricing' => $this->resolvePricingSummary(),
-                                    'cartLines' => $this->getCartLines(),
+                                    'cartLines' => $this->getAllDisplayLines(),
                                     'customer' => [
                                         'first_name' => $this->data['first_name'] ?? null,
                                         'last_name' => $this->data['last_name'] ?? null,
@@ -305,7 +311,7 @@ class CreateCounterOrder extends Page
             ];
         }
 
-        $this->data['items'] = array_values($items);
+        $this->syncProductItems($items);
         $this->selectedProductId = null;
         $this->productSearch = '';
         $this->addQuantity = 1;
@@ -434,7 +440,7 @@ class CreateCounterOrder extends Page
         }
 
         $items[$index]['quantity'] = $quantity;
-        $this->data['items'] = array_values($items);
+        $this->syncProductItems($items);
     }
 
     public function removeLine(int $index): void
@@ -446,7 +452,248 @@ class CreateCounterOrder extends Page
         }
 
         unset($items[$index]);
+        $this->syncProductItems($items);
+    }
+
+    public function addCustomLineAction(): Action
+    {
+        return Action::make('addCustomLine')
+            ->label('Add custom line')
+            ->modalHeading('Add custom line')
+            ->modalDescription('Charges such as packaging, delivery, or services not tied to a catalog product.')
+            ->modalSubmitActionLabel('Add')
+            ->modalWidth('2xl')
+            ->fillForm(fn (): array => CounterOrderCustomLineForm::defaultFormState())
+            ->schema(CounterOrderCustomLineForm::fields())
+            ->action(function (array $data): void {
+                $lines = $this->data['custom_lines'] ?? [];
+                $lines[] = InvoiceLinePreview::normalizeFromForm($data);
+                $this->syncCustomLines($lines);
+            });
+    }
+
+    public function editCustomLineAction(): Action
+    {
+        return Action::make('editCustomLine')
+            ->modalHeading('Edit custom line')
+            ->modalSubmitActionLabel('Save')
+            ->modalWidth('2xl')
+            ->fillForm(function (array $arguments): array {
+                $lines = $this->data['custom_lines'] ?? [];
+                $index = (int) ($arguments['index'] ?? 0);
+                $line = $lines[$index] ?? [];
+
+                return array_merge(CounterOrderCustomLineForm::defaultFormState(), $line);
+            })
+            ->schema(CounterOrderCustomLineForm::fields())
+            ->action(function (array $data, array $arguments): void {
+                $lines = $this->data['custom_lines'] ?? [];
+                $index = (int) ($arguments['index'] ?? 0);
+
+                if (! isset($lines[$index])) {
+                    return;
+                }
+
+                $lines[$index] = InvoiceLinePreview::normalizeFromForm($data);
+                $this->syncCustomLines($lines);
+            });
+    }
+
+    public function removeCustomLine(int $index): void
+    {
+        $lines = $this->data['custom_lines'] ?? [];
+
+        if (! isset($lines[$index])) {
+            return;
+        }
+
+        unset($lines[$index]);
+        $this->syncCustomLines($lines);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $lines
+     */
+    protected function syncCustomLines(array $lines): void
+    {
+        $this->data['custom_lines'] = array_values($lines);
+        $this->form->fill([
+            ...($this->data ?? []),
+            'custom_lines' => $this->data['custom_lines'],
+        ]);
+    }
+
+    /**
+     * @param  list<array{product_id: int, quantity: int}>  $items
+     */
+    protected function syncProductItems(array $items): void
+    {
         $this->data['items'] = array_values($items);
+        $this->form->fill([
+            ...($this->data ?? []),
+            'items' => $this->data['items'],
+        ]);
+    }
+
+    public function editProductLineAction(): Action
+    {
+        return Action::make('editProductLine')
+            ->modalHeading('Edit product line')
+            ->modalSubmitActionLabel('Save')
+            ->fillForm(function (array $arguments): array {
+                $items = $this->data['items'] ?? [];
+                $index = (int) ($arguments['index'] ?? 0);
+                $item = $items[$index] ?? [];
+
+                return [
+                    'quantity' => max(1, (int) ($item['quantity'] ?? 1)),
+                ];
+            })
+            ->schema([
+                TextInput::make('quantity')
+                    ->label('Quantity')
+                    ->numeric()
+                    ->minValue(1)
+                    ->required(),
+            ])
+            ->action(function (array $data, array $arguments): void {
+                $this->updateLineQuantity((int) ($arguments['index'] ?? 0), $data['quantity'] ?? 1);
+            });
+    }
+
+    /**
+     * @return list<array{
+     *     line_type: string,
+     *     line_index: int,
+     *     description: string,
+     *     subtitle: ?string,
+     *     quantity: int,
+     *     unit_price_minor: int,
+     *     discount_minor: int,
+     *     tax_rate_percent: float,
+     *     tax_minor: int,
+     *     line_total_minor: int,
+     *     stock_quantity: ?int
+     * }>
+     */
+    public function getOrderLinesTableRows(): array
+    {
+        $rows = [];
+        $tax = app(TaxCalculationService::class);
+
+        foreach ($this->getCartLines() as $index => $line) {
+            $product = Product::query()->find($line['product_id']);
+            $calc = $tax->calculateLine(
+                $line['unit_price_minor'],
+                $line['quantity'],
+                product: $product,
+            );
+
+            $rows[] = [
+                'line_type' => 'product',
+                'line_index' => $index,
+                'description' => $line['name'],
+                'subtitle' => $line['sku'],
+                'quantity' => $line['quantity'],
+                'unit_price_minor' => $line['unit_price_minor'],
+                'discount_minor' => 0,
+                'tax_rate_percent' => (float) ($calc['tax_rate_percent'] ?? 0),
+                'tax_minor' => (int) ($calc['tax_minor'] ?? 0),
+                'line_total_minor' => (int) ($calc['line_total_minor'] ?? $line['line_total_minor']),
+                'stock_quantity' => $line['stock_quantity'],
+            ];
+        }
+
+        foreach ($this->getCustomLineRows() as $index => $line) {
+            $rows[] = [
+                'line_type' => 'custom',
+                'line_index' => $index,
+                'description' => $line['description'],
+                'subtitle' => null,
+                'quantity' => $line['quantity'],
+                'unit_price_minor' => $line['unit_price_minor'],
+                'discount_minor' => $line['discount_minor'],
+                'tax_rate_percent' => $line['tax_rate_percent'],
+                'tax_minor' => $line['tax_minor'],
+                'line_total_minor' => $line['line_total_minor'],
+                'stock_quantity' => null,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return list<array{
+     *     description: string,
+     *     quantity: int,
+     *     unit_price_minor: int,
+     *     discount_minor: int,
+     *     tax_rate_percent: float,
+     *     tax_minor: int,
+     *     line_total_minor: int,
+     *     product_name: ?string
+     * }>
+     */
+    public function getCustomLineRows(): array
+    {
+        $lines = $this->data['custom_lines'] ?? [];
+
+        if ($lines === []) {
+            return [];
+        }
+
+        return InvoiceLinePreview::summarize($lines)['rows'];
+    }
+
+    /**
+     * @return list<array{
+     *     type: string,
+     *     name: string,
+     *     sku: ?string,
+     *     quantity: int,
+     *     unit_price_minor: int,
+     *     line_total_minor: int,
+     *     is_custom: bool
+     * }>
+     */
+    public function getAllDisplayLines(): array
+    {
+        $display = [];
+
+        foreach ($this->getOrderLinesTableRows() as $row) {
+            if ($row['line_type'] !== 'product') {
+                continue;
+            }
+
+            $display[] = [
+                'type' => 'product',
+                'name' => $row['description'],
+                'sku' => $row['subtitle'],
+                'quantity' => $row['quantity'],
+                'unit_price_minor' => $row['unit_price_minor'],
+                'line_total_minor' => $row['line_total_minor'],
+                'is_custom' => false,
+            ];
+        }
+
+        foreach ($this->getOrderLinesTableRows() as $row) {
+            if ($row['line_type'] !== 'custom') {
+                continue;
+            }
+
+            $display[] = [
+                'type' => 'custom',
+                'name' => $row['description'],
+                'sku' => null,
+                'quantity' => $row['quantity'],
+                'unit_price_minor' => $row['unit_price_minor'],
+                'line_total_minor' => $row['line_total_minor'],
+                'is_custom' => true,
+            ];
+        }
+
+        return $display;
     }
 
     /**
@@ -520,12 +767,12 @@ class CreateCounterOrder extends Page
      */
     public function getSidebarData(): array
     {
-        $cartLines = $this->getCartLines();
+        $displayLines = $this->getAllDisplayLines();
 
         return [
             'pricing' => $this->resolvePricingSummary(),
-            'cartLines' => $cartLines,
-            'itemCount' => (int) collect($cartLines)->sum('quantity'),
+            'cartLines' => $displayLines,
+            'itemCount' => (int) collect($displayLines)->sum('quantity'),
             'customer' => [
                 'first_name' => $this->data['first_name'] ?? null,
                 'last_name' => $this->data['last_name'] ?? null,
@@ -601,14 +848,16 @@ class CreateCounterOrder extends Page
             ->values()
             ->all();
 
-        if ($items === []) {
+        $customLines = $this->data['custom_lines'] ?? [];
+
+        if ($items === [] && $customLines === []) {
             return [
                 'subtotal_minor' => 0,
                 'discount_minor' => 0,
                 'manual_discount_minor' => 0,
                 'coupon_code' => null,
                 'gst_minor' => 0,
-                'gst_percentage' => 0,
+                'effective_tax_rate' => 0,
                 'total_minor' => 0,
             ];
         }
@@ -616,6 +865,7 @@ class CreateCounterOrder extends Page
         try {
             return app(CounterOrderService::class)->calculateTotals(
                 $items,
+                $customLines,
                 $this->data['coupon_code'] ?? null,
                 (int) round(((float) ($this->data['manual_discount'] ?? 0)) * 100),
             );
@@ -626,7 +876,7 @@ class CreateCounterOrder extends Page
                 'manual_discount_minor' => 0,
                 'coupon_code' => null,
                 'gst_minor' => 0,
-                'gst_percentage' => 0,
+                'effective_tax_rate' => 0,
                 'total_minor' => 0,
                 'coupon_error' => true,
             ];

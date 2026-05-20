@@ -5,7 +5,6 @@
 @section('content')
 
 <div class="sf-page-header" style="background: #1E3A2A; padding: 3rem 0; position: relative; overflow: hidden;">
-    <div class="druk-pattern" style="position: absolute; inset: 0; opacity: 0.3;"></div>
     <div class="sf-container" style="position: relative;">
         <p class="section-label" style="color: #D4A843; margin-bottom: 0.75rem;">Curated collection</p>
         <h1 style="font-family: 'Cormorant Garamond', serif; font-size: clamp(2.5rem, 5vw, 4.5rem); color: #F7F2E8; font-weight: 600;">

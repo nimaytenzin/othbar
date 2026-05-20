@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\BankAccount;
 use App\Models\SiteSetting;
 use Illuminate\Support\Facades\Storage;
 
@@ -26,28 +27,40 @@ class PaymentChannels
     }
 
     /**
-     * Single merchant receiving account (admin configures one bank account).
+     * Default active bank account for storefront checkout and receipts.
+     */
+    public static function defaultBankAccount(): ?BankAccount
+    {
+        $settings = SiteSetting::current();
+        $settings->loadMissing('defaultBankAccount');
+
+        if ($settings->defaultBankAccount?->is_active) {
+            return $settings->defaultBankAccount;
+        }
+
+        return BankAccount::query()
+            ->where('is_active', true)
+            ->orderByDesc('is_default')
+            ->orderBy('id')
+            ->first();
+    }
+
+    /**
+     * Receiving account details for storefront pay page and receipts.
      *
      * @return array{bank_label: string, account_name: string, account_number: string, qr_url: ?string}
      */
     public static function merchantAccount(): array
     {
-        $settings = SiteSetting::current();
-        $stored = $settings->payment_merchant_account;
+        $account = static::defaultBankAccount();
 
-        if (is_array($stored) && filled($stored['account_number'] ?? null)) {
-            return static::normalizeMerchantAccount($stored);
-        }
-
-        $legacyChannels = $settings->payment_channels;
-        if (is_array($legacyChannels) && $legacyChannels !== []) {
-            $first = collect($legacyChannels)->first(
-                fn (array $channel): bool => filled($channel['account_number'] ?? null),
-            );
-
-            if (is_array($first)) {
-                return static::normalizeMerchantAccount($first);
-            }
+        if ($account !== null) {
+            return static::normalizeMerchantAccount([
+                'bank_label' => $account->bank_name,
+                'account_name' => $account->account_name,
+                'account_number' => $account->account_number,
+                'qr_path' => $account->qr_path,
+            ]);
         }
 
         return static::normalizeMerchantAccount(config('payments.merchant_account', []));

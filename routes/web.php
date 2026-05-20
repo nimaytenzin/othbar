@@ -9,8 +9,6 @@ Route::get('/shop', [StorefrontController::class, 'shop'])->name('shop');
 Route::get('/shop/{slug}', [StorefrontController::class, 'product'])->name('product');
 Route::get('/collections/{slug}', [StorefrontController::class, 'collection'])->name('collection');
 Route::get('/our-story', [StorefrontController::class, 'story'])->name('story');
-Route::get('/journal', [StorefrontController::class, 'journal'])->name('journal');
-Route::get('/journal/{slug}', [StorefrontController::class, 'journalShow'])->name('journal.show');
 
 Route::get('/login', [StorefrontController::class, 'staffLogin'])->name('storefront.login');
 

@@ -11,7 +11,6 @@
     $receiptUrl = route('filament.admin.orders.receipt', $order).'?autoprint=1';
     $pricing = $order->pricingSummary();
     $merchantAccount = PaymentChannels::merchantAccount();
-    $paymentApps = PaymentChannels::paymentApps();
     $fulfillmentSteps = $order->fulfillmentSteps();
     $canMarkFulfilled = $order->canMarkFulfilled();
     $canCancel = ! $order->isCompleted() && ! $order->isCancelled();
@@ -182,7 +181,13 @@
                         @endif
                         @if($pricing['gst_minor'] > 0)
                         <tr>
-                            <td colspan="4" class="text-right">GST ({{ rtrim(rtrim(number_format($pricing['gst_percentage'], 2), '0'), '.') }}%)</td>
+                            <td colspan="4" class="text-right">
+                                @if(($pricing['show_tax_rate'] ?? true) && ($pricing['effective_tax_rate'] ?? $pricing['gst_percentage'] ?? 0) > 0)
+                                    GST ({{ rtrim(rtrim(number_format($pricing['effective_tax_rate'] ?? $pricing['gst_percentage'], 2), '0'), '.') }}%)
+                                @else
+                                    GST
+                                @endif
+                            </td>
                             <td class="text-right">Nu. {{ number_format($pricing['gst_minor'] / 100) }}</td>
                         </tr>
                         @endif
@@ -241,11 +246,9 @@
         @if(! $isCounter)
         <div class="oth-card">
             <h3 class="oth-card__title">Bank details</h3>
-            <p class="oth-card__subtitle" style="margin-top:0.25rem;">Edit in Admin → Payment &amp; GST</p>
             <div style="margin-top:1rem;">
                 @include('partials.order-bank-details', [
                     'merchantAccount' => $merchantAccount,
-                    'paymentApps' => $paymentApps,
                     'compact' => true,
                 ])
             </div>

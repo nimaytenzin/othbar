@@ -12,7 +12,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="texture-bg min-h-screen">
+<body class="min-h-screen">
 
     {{-- Announcement bar --}}
     <div class="sf-announcement" style="background: #1E3A2A; color: #F7F2E8;">
@@ -38,7 +38,7 @@
                 <nav class="sf-nav-desktop" aria-label="Primary">
                     <a href="{{ route('shop') }}" class="nav-link">Shop</a>
                     <a href="{{ route('story') }}" class="nav-link">Our Story</a>
-                    <a href="#farms" class="nav-link">Farms</a>
+                    <a href="{{ route('home') }}#farms" class="nav-link">Farms</a>
                 </nav>
 
                 <a href="{{ route('home') }}" class="sf-logo-wrap" style="text-decoration: none;">
@@ -50,8 +50,7 @@
 
                 <div class="sf-header-actions">
                     <nav class="sf-nav-desktop" aria-label="Secondary">
-                        <a href="{{ route('journal') }}" class="nav-link">Journal</a>
-                        <a href="#contact" class="nav-link">Contact</a>
+                        <a href="{{ route('home') }}#contact" class="nav-link">Contact</a>
                         <a href="{{ route('storefront.login') }}" class="nav-link">Login</a>
                     </nav>
                     @php
@@ -73,13 +72,10 @@
         <nav id="nav-mobile-menu" class="sf-nav-mobile-menu" aria-label="Mobile">
             <a href="{{ route('shop') }}">Shop</a>
             <a href="{{ route('story') }}">Our Story</a>
-            <a href="#farms">Farms</a>
-            <a href="{{ route('journal') }}">Journal</a>
-            <a href="#contact">Contact</a>
+            <a href="{{ route('home') }}#farms">Farms</a>
+            <a href="{{ route('home') }}#contact">Contact</a>
             <a href="{{ route('storefront.login') }}">Login</a>
         </nav>
-
-        <div class="footer-weave" style="opacity: 0.7;"></div>
     </header>
 
     <main>
@@ -88,7 +84,6 @@
 
     {{-- Footer --}}
     <footer class="sf-footer" style="background: #1E3A2A; color: #EDE5D0;">
-        <div class="footer-weave"></div>
         <div class="sf-container sf-footer-inner">
             <div class="sf-footer-grid">
 
@@ -123,9 +118,8 @@
                     <h4 style="font-family: 'Jost', sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #C4843C; margin-bottom: 1.25rem;">Company</h4>
                     <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.75rem;">
                         <li><a href="{{ route('story') }}" style="font-size: 0.88rem; color: rgba(237,229,208,0.75); text-decoration: none;" onmouseover="this.style.color='#EDE5D0'" onmouseout="this.style.color='rgba(237,229,208,0.75)'">Our Story</a></li>
-                        <li><a href="#farms" style="font-size: 0.88rem; color: rgba(237,229,208,0.75); text-decoration: none;" onmouseover="this.style.color='#EDE5D0'" onmouseout="this.style.color='rgba(237,229,208,0.75)'">Our Farms</a></li>
-                        <li><a href="{{ route('journal') }}" style="font-size: 0.88rem; color: rgba(237,229,208,0.75); text-decoration: none;" onmouseover="this.style.color='#EDE5D0'" onmouseout="this.style.color='rgba(237,229,208,0.75)'">Journal</a></li>
-                        <li><a href="#contact" style="font-size: 0.88rem; color: rgba(237,229,208,0.75); text-decoration: none;" onmouseover="this.style.color='#EDE5D0'" onmouseout="this.style.color='rgba(237,229,208,0.75)'">Contact</a></li>
+                        <li><a href="{{ route('home') }}#farms" style="font-size: 0.88rem; color: rgba(237,229,208,0.75); text-decoration: none;" onmouseover="this.style.color='#EDE5D0'" onmouseout="this.style.color='rgba(237,229,208,0.75)'">Our Farms</a></li>
+                        <li><a href="{{ route('home') }}#contact" style="font-size: 0.88rem; color: rgba(237,229,208,0.75); text-decoration: none;" onmouseover="this.style.color='#EDE5D0'" onmouseout="this.style.color='rgba(237,229,208,0.75)'">Contact</a></li>
                     </ul>
                 </div>
 

@@ -4,30 +4,25 @@
 
 @section('content')
 
-<div class="sf-page-header" style="background: #EDE5D0; border-bottom: 1px solid #D8CCAD;">
+<div class="sf-page-header sf-page-header--parchment">
     <div class="sf-container">
         <p class="section-label">Your selections</p>
-        <h1 style="font-family: 'Cormorant Garamond', serif; font-size: clamp(2.5rem, 5vw, 4rem); color: #1E3A2A; margin-top: 0.5rem;">Your basket</h1>
+        <h1 class="sf-heading-lg">Your basket</h1>
     </div>
 </div>
 
 <div class="sf-container sf-page-body">
 
-    {{-- Flash messages --}}
     @if(session('success'))
-    <div style="background: #D4EDDA; border: 1px solid #C3E6CB; color: #155724; padding: 0.875rem 1.25rem; margin-bottom: 2rem; font-size: 0.875rem;">
-        {{ session('success') }}
-    </div>
+    <div class="sf-alert sf-alert--success" role="status">{{ session('success') }}</div>
     @endif
     @if(session('error'))
-    <div style="background: #F8D7DA; border: 1px solid #F5C6CB; color: #721C24; padding: 0.875rem 1.25rem; margin-bottom: 2rem; font-size: 0.875rem;">
-        {{ session('error') }}
-    </div>
+    <div class="sf-alert sf-alert--error" role="alert">{{ session('error') }}</div>
     @endif
 
     @if($cartLines->isEmpty())
-    <div style="text-align: center; padding: 4rem 0;">
-        <p style="font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: #1E3A2A; margin-bottom: 1rem;">Your basket is empty</p>
+    <div class="sf-empty-state">
+        <p class="sf-empty-state__title">Your basket is empty</p>
         <a href="{{ route('shop') }}" class="btn-primary" style="display: inline-flex; text-decoration: none; justify-content: center;">
             Continue shopping
         </a>
@@ -35,60 +30,55 @@
     @else
     <div class="sf-grid-split">
 
-        {{-- Cart items --}}
         <div>
             @foreach($cartLines as $line)
-            <div class="sf-cart-line" style="padding: 1.75rem 0; border-bottom: 1px solid #D8CCAD;">
+            <div class="sf-cart-line" style="padding: 1.75rem 0; border-bottom: 1px solid var(--border);">
                 <div class="product-image-frame product-image-frame--square">
                     @if($line->purchasable)
                     <x-product-image :product="$line->purchasable" />
                     @endif
                 </div>
                 <div>
-                    <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; color: #1E3A2A; font-weight: 600; margin-bottom: 0.25rem;">{{ $line->purchasable->name ?? 'Product' }}</h3>
-                    <span style="font-size: 0.85rem; color: rgba(30,58,42,0.55);">Nu. {{ number_format($line->unit_price_amount / 100) }} each</span>
+                    <h3 class="sf-cart-line-title">{{ $line->purchasable->name ?? 'Product' }}</h3>
+                    <span class="sf-cart-line-meta">Nu. {{ number_format($line->unit_price_amount / 100) }} each</span>
 
-                    {{-- Quantity update form --}}
-                    <form method="POST" action="{{ route('cart.line.update', $line->line_index) }}" style="display: flex; align-items: center; margin-top: 1rem; gap: 0.5rem;">
+                    <form method="POST" action="{{ route('cart.line.update', $line->line_index) }}">
                         @csrf
                         @method('PATCH')
-                        <div style="display: flex; align-items: center; border: 1px solid #D8CCAD;">
-                            <button type="button" style="padding: 0.375rem 0.75rem; background: none; border: none; cursor: pointer; font-size: 1rem; color: #1E3A2A; line-height: 1;"
+                        <div class="sf-qty-control">
+                            <button type="button" class="sf-qty-btn"
                                 onclick="const i=this.nextElementSibling;if(parseInt(i.value)>1){i.value=parseInt(i.value)-1;this.closest('form').submit();}">−</button>
-                            <input type="number" name="quantity" value="{{ $line->quantity }}" min="1" style="width: 44px; text-align: center; border: none; border-left: 1px solid #D8CCAD; border-right: 1px solid #D8CCAD; background: none; font-family: 'Cormorant Garamond', serif; font-size: 1rem; color: #1E3A2A; outline: none; padding: 0.375rem 0;">
-                            <button type="button" style="padding: 0.375rem 0.75rem; background: none; border: none; cursor: pointer; font-size: 1rem; color: #1E3A2A; line-height: 1;"
+                            <input type="number" name="quantity" value="{{ $line->quantity }}" min="1" class="sf-qty-input">
+                            <button type="button" class="sf-qty-btn"
                                 onclick="const i=this.previousElementSibling;i.value=parseInt(i.value)+1;this.closest('form').submit();">+</button>
                         </div>
                     </form>
                 </div>
                 <div class="sf-cart-line__price">
-                    <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 600; color: #1E3A2A; display: block;">Nu. {{ number_format(($line->unit_price_amount * $line->quantity) / 100) }}</span>
-                    <form method="POST" action="{{ route('cart.line.remove', $line->line_index) }}" style="display: inline;">
+                    <span class="sf-cart-line-price">Nu. {{ number_format(($line->unit_price_amount * $line->quantity) / 100) }}</span>
+                    <form method="POST" action="{{ route('cart.line.remove', $line->line_index) }}">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" style="margin-top: 0.75rem; font-size: 0.72rem; color: rgba(30,58,42,0.4); background: none; border: none; cursor: pointer; text-decoration: underline; text-underline-offset: 2px;"
-                            onclick="return confirm('Remove this item?')">Remove</button>
+                        <button type="submit" class="sf-remove-btn" onclick="return confirm('Remove this item?')">Remove</button>
                     </form>
                 </div>
             </div>
             @endforeach
 
             <div style="margin-top: 2rem;">
-                <a href="{{ route('shop') }}" style="font-size: 0.78rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #1E3A2A; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5m7-7-7 7 7 7"/></svg>
+                <a href="{{ route('shop') }}" class="sf-link-back">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7"/></svg>
                     Continue shopping
                 </a>
             </div>
         </div>
 
-        {{-- Order summary --}}
-        <div class="sf-sticky-summary" style="background: #EDE5D0; padding: 2rem; border: 1px solid #D8CCAD;">
-            <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: #1E3A2A; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #D8CCAD;">Order summary</h2>
+        <aside class="sf-sticky-summary sf-summary-panel">
+            <h2 class="sf-summary-panel__title">Order summary</h2>
 
-            {{-- Line items summary --}}
-            <div style="margin-bottom: 1.25rem;">
+            <div class="sf-summary-lines">
                 @foreach($cartLines as $line)
-                <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.85rem; color: rgba(30,58,42,0.75);">
+                <div class="sf-summary-line">
                     <span>{{ $line->purchasable->name ?? 'Product' }} &times; {{ $line->quantity }}</span>
                     <span>Nu. {{ number_format(($line->unit_price_amount * $line->quantity) / 100) }}</span>
                 </div>
@@ -97,68 +87,65 @@
 
             <div class="gold-line" style="margin-bottom: 1.25rem;"></div>
 
-            {{-- Coupon --}}
             @if($cart && $cart->coupon_code)
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; margin-bottom: 0.75rem; border-bottom: 1px solid #D8CCAD;">
-                <span style="font-size: 0.82rem; color: #1E3A2A;">Coupon: <strong>{{ $cart->coupon_code }}</strong></span>
-                <form method="POST" action="{{ route('cart.coupon.remove') }}" style="display: inline;">
+            <div class="sf-summary-row sf-summary-row--coupon">
+                <span>Coupon: <strong>{{ $cart->coupon_code }}</strong></span>
+                <form method="POST" action="{{ route('cart.coupon.remove') }}">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" style="font-size: 0.72rem; color: rgba(30,58,42,0.4); background: none; border: none; cursor: pointer; text-decoration: underline; text-underline-offset: 2px;">Remove</button>
+                    <button type="submit" class="sf-remove-btn" style="margin-top: 0;">Remove</button>
                 </form>
             </div>
             @endif
 
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-top: 1px solid #D8CCAD;">
-                <span style="font-size: 0.88rem; font-weight: 600; color: #1E3A2A;">Subtotal</span>
-                <span style="font-family: 'Cormorant Garamond', serif; font-size: 1rem; font-weight: 600; color: #1E3A2A;">Nu. {{ number_format(($subtotalMinor ?? $cartLines->sum(fn($l) => $l->unit_price_amount * $l->quantity)) / 100) }}</span>
+            <div class="sf-summary-row" style="border-top: 1px solid var(--border); padding-top: 0.75rem;">
+                <span style="font-weight: 600;">Subtotal</span>
+                <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600;">Nu. {{ number_format(($subtotalMinor ?? $cartLines->sum(fn($l) => $l->unit_price_amount * $l->quantity)) / 100) }}</span>
             </div>
 
             @if(($discountMinor ?? 0) > 0)
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; font-size: 0.88rem; color: #1E3A2A;">
+            <div class="sf-summary-row">
                 <span>Discount</span>
-                <span style="color: #C4843C;">− Nu. {{ number_format($discountMinor / 100) }}</span>
+                <span style="color: var(--accent);">− Nu. {{ number_format($discountMinor / 100) }}</span>
             </div>
             @endif
 
-            @if(($gstMinor ?? 0) > 0 && ($gstPercentage ?? 0) > 0)
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; font-size: 0.88rem; color: #1E3A2A;">
-                <span>GST ({{ rtrim(rtrim(number_format($gstPercentage, 2), '0'), '.') }}%)</span>
+            @if(($gstMinor ?? 0) > 0)
+            <div class="sf-summary-row">
+                <span>
+                    @if(($effectiveTaxRate ?? 0) > 0)
+                        GST ({{ rtrim(rtrim(number_format($effectiveTaxRate, 2), '0'), '.') }}%)
+                    @else
+                        GST
+                    @endif
+                </span>
                 <span>Nu. {{ number_format($gstMinor / 100) }}</span>
             </div>
             @endif
 
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-top: 2px solid #1E3A2A; border-bottom: 1px solid #D8CCAD; margin-bottom: 1.5rem;">
-                <span style="font-size: 1rem; font-weight: 600; color: #1E3A2A;">Total</span>
-                <span style="font-family: 'Cormorant Garamond', serif; font-size: 1.75rem; font-weight: 700; color: #1E3A2A;">Nu. {{ number_format(($totalMinor ?? $cartLines->sum(fn($l) => $l->unit_price_amount * $l->quantity)) / 100) }}</span>
+            <div class="sf-summary-total">
+                <span class="sf-summary-total__label">Total</span>
+                <span class="sf-summary-total__amount">Nu. {{ number_format(($totalMinor ?? $cartLines->sum(fn($l) => $l->unit_price_amount * $l->quantity)) / 100) }}</span>
             </div>
 
-            {{-- Coupon form --}}
             @unless($cart && $cart->coupon_code)
-            <form method="POST" action="{{ route('cart.coupon.apply') }}" style="margin-bottom: 1.5rem;">
+            <form method="POST" action="{{ route('cart.coupon.apply') }}">
                 @csrf
                 @if(session('coupon_error'))
-                <p style="font-size: 0.78rem; color: #b91c1c; margin-bottom: 0.5rem;">{{ session('coupon_error') }}</p>
+                <p class="sf-coupon-error">{{ session('coupon_error') }}</p>
                 @endif
-                <div style="display: flex; border: 1px solid #D8CCAD; overflow: hidden;">
-                    <input type="text" name="coupon_code" placeholder="Promo code" value="{{ old('coupon_code') }}"
-                        style="flex: 1; padding: 0.75rem 1rem; background: #F7F2E8; border: none; font-family: 'Jost', sans-serif; font-size: 0.85rem; color: #1E3A2A; outline: none; text-transform: uppercase;" />
-                    <button type="submit" style="padding: 0.75rem 1rem; background: #1E3A2A; border: none; font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #F7F2E8; cursor: pointer;">Apply</button>
+                <div class="sf-coupon-form">
+                    <input type="text" name="coupon_code" placeholder="Promo code" value="{{ old('coupon_code') }}" class="sf-coupon-input" />
+                    <button type="submit" class="sf-coupon-btn">Apply</button>
                 </div>
             </form>
             @endunless
 
-            <a href="{{ route('checkout') }}" class="btn-primary" style="width: 100%; display: flex; justify-content: center; text-decoration: none; font-size: 0.85rem; box-sizing: border-box;">
+            <a href="{{ route('checkout') }}" class="btn-primary sf-btn-block" style="font-size: 0.85rem;">
                 Proceed to checkout
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
             </a>
-
-            <div style="margin-top: 1.25rem; display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;">
-                @foreach(['Secure payment', 'Organic certified', 'Eco packaging'] as $trust)
-                <span style="font-size: 0.68rem; color: rgba(30,58,42,0.5);">{{ $trust }}</span>
-                @endforeach
-            </div>
-        </div>
+        </aside>
 
     </div>
     @endif

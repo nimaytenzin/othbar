@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Cache;
 
 class SiteSetting extends Model
@@ -61,13 +62,44 @@ class SiteSetting extends Model
         'payment_channels',
         'payment_merchant_account',
         'pickup_address_label',
-        'gst_percentage',
+        'business_name',
+        'gst_tpn',
+        'business_licence_number',
+        'business_type',
+        'drc_registration_number',
+        'business_address_line1',
+        'business_address_line2',
+        'business_city',
+        'business_district',
+        'business_postal_code',
+        'business_phone',
+        'business_email',
+        'business_website',
+        'business_logo_path',
+        'default_currency',
+        'fiscal_year_start_month',
+        'invoice_payment_terms_days',
+        'invoice_terms_text',
+        'invoice_footer_text',
+        'is_gst_registered',
+        'default_tax_classification_id',
+        'default_bank_account_id',
+        'prefix_invoice',
+        'prefix_bill',
+        'prefix_customer_payment',
+        'prefix_supplier_payment',
+        'prefix_quotation',
+        'prefix_contract',
+        'prefix_credit_note',
+        'prefix_debit_note',
     ];
 
     protected function casts(): array
     {
         return [
-            'gst_percentage' => 'decimal:2',
+            'is_gst_registered' => 'boolean',
+            'fiscal_year_start_month' => 'integer',
+            'invoice_payment_terms_days' => 'integer',
             'story_origin_paragraphs' => 'array',
             'provenance_items' => 'array',
             'stats' => 'array',
@@ -219,7 +251,58 @@ class SiteSetting extends Model
             ],
             'payment_channels' => [],
             'pickup_address_label' => config('payments.pickup_address_label', 'In-store pickup at Othbar'),
-            'gst_percentage' => 5,
+            'business_name' => 'Othbar processing and packaging',
+            'gst_tpn' => 'TBB29438',
+            'business_licence_number' => 'Lic.1054845',
+            'business_type' => 'retail',
+            'business_address_line1' => 'Othbar Valley',
+            'business_city' => 'Thimphu',
+            'business_district' => 'Thimphu',
+            'business_postal_code' => '11001',
+            'business_phone' => '+975-2-XXXXXX',
+            'business_email' => 'business@othbar.bt',
+            'default_currency' => 'BTN',
+            'fiscal_year_start_month' => 1,
+            'invoice_payment_terms_days' => 30,
+            'invoice_terms_text' => 'Payment due within 30 days. Late payment subject to interest charges.',
+            'invoice_footer_text' => 'Thank you for your business!',
+            'is_gst_registered' => true,
+            'prefix_invoice' => 'INV',
+            'prefix_bill' => 'BILL',
+            'prefix_customer_payment' => 'RCP',
+            'prefix_supplier_payment' => 'SPR',
+            'prefix_quotation' => 'QT',
+            'prefix_contract' => 'CTR',
+            'prefix_credit_note' => 'CN',
+            'prefix_debit_note' => 'DN',
         ];
+    }
+
+    public function defaultTaxClassification(): BelongsTo
+    {
+        return $this->belongsTo(TaxClassification::class, 'default_tax_classification_id');
+    }
+
+    public function defaultBankAccount(): BelongsTo
+    {
+        return $this->belongsTo(BankAccount::class, 'default_bank_account_id');
+    }
+
+    public function businessAddressBlock(): string
+    {
+        return collect([
+            $this->business_address_line1,
+            $this->business_address_line2,
+            collect([$this->business_city, $this->business_district, $this->business_postal_code])
+                ->filter()
+                ->implode(', '),
+        ])->filter()->implode("\n");
+    }
+
+    public function businessContactLine(): string
+    {
+        return collect([$this->business_phone, $this->business_email])
+            ->filter()
+            ->implode(' · ');
     }
 }

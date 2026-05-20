@@ -13,6 +13,8 @@ class OrderItem extends Model
         'name',
         'quantity',
         'unit_price_minor',
+        'discount_minor',
+        'tax_classification_id',
         'sku',
     ];
 
@@ -24,6 +26,11 @@ class OrderItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function taxClassification(): BelongsTo
+    {
+        return $this->belongsTo(TaxClassification::class);
     }
 
     public function getLineTotalMinorAttribute(): int

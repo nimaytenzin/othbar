@@ -6,13 +6,16 @@ use App\Enums\CouponType;
 use App\Exceptions\InvalidCouponException;
 use App\Models\Coupon;
 use App\Models\Product;
-use App\Models\SiteSetting;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Session;
 
 class CartSessionService
 {
     public const SESSION_KEY = 'othbar_cart';
+
+    public function __construct(
+        private readonly TaxCalculationService $taxCalculation,
+    ) {}
 
     /**
      * @return array{lines: list<array{product_id: int, quantity: int, unit_price_amount: int}>, coupon_code: ?string}
@@ -63,14 +66,36 @@ class CartSessionService
         ];
     }
 
+    /**
+     * @return array{
+     *     subtotal_minor: int,
+     *     discount_minor: int,
+     *     tax_minor: int,
+     *     gst_minor: int,
+     *     total_minor: int,
+     *     effective_tax_rate: float,
+     *     tax_breakdown: list<array>
+     * }
+     */
+    public function pricingTotals(): array
+    {
+        $lineItems = collect($this->lineRows())->map(fn (array $line): array => [
+            'product_id' => (int) $line['product_id'],
+            'quantity' => (int) $line['quantity'],
+            'unit_price_minor' => (int) $line['unit_price_amount'],
+        ])->all();
+
+        return $this->taxCalculation->calculateCartTotals(
+            $lineItems,
+            $this->discountMinor(),
+        );
+    }
+
     public function subtotalMinor(): int
     {
-        $sum = 0;
-        foreach ($this->lineRows() as $line) {
-            $sum += $line['unit_price_amount'] * $line['quantity'];
-        }
-
-        return $sum;
+        return collect($this->lineRows())->sum(
+            fn (array $line): int => $line['unit_price_amount'] * $line['quantity'],
+        );
     }
 
     public function resolvedCoupon(): ?Coupon
@@ -92,7 +117,9 @@ class CartSessionService
             return 0;
         }
 
-        $subtotal = $this->subtotalMinor();
+        $subtotal = collect($this->lineRows())->sum(
+            fn (array $line): int => $line['unit_price_amount'] * $line['quantity'],
+        );
 
         return match ($coupon->type) {
             CouponType::Percent => (int) floor($subtotal * min(100, $coupon->value) / 100),
@@ -102,29 +129,24 @@ class CartSessionService
 
     public function taxableMinor(): int
     {
-        return max(0, $this->subtotalMinor() - $this->discountMinor());
+        $totals = $this->pricingTotals();
+
+        return max(0, $totals['subtotal_minor'] - $totals['discount_minor']);
     }
 
-    public function gstPercentage(): float
+    public function effectiveTaxRate(): float
     {
-        $pct = (float) (SiteSetting::current()->gst_percentage ?? 5);
-
-        return max(0, min(100, $pct));
+        return $this->pricingTotals()['effective_tax_rate'];
     }
 
     public function gstMinor(): int
     {
-        $pct = $this->gstPercentage();
-        if ($pct <= 0) {
-            return 0;
-        }
-
-        return (int) floor($this->taxableMinor() * $pct / 100);
+        return $this->pricingTotals()['gst_minor'];
     }
 
     public function totalMinor(): int
     {
-        return $this->taxableMinor() + $this->gstMinor();
+        return $this->pricingTotals()['total_minor'];
     }
 
     public function couponApplies(Coupon $coupon): bool

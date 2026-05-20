@@ -2,13 +2,18 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Pages\CreateCounterOrder;
+use App\Http\Controllers\Admin\InvoicePrintController;
 use App\Http\Controllers\Admin\OrderPaymentProofController;
 use App\Http\Controllers\Admin\OrderReceiptController;
+use App\Http\Controllers\Admin\PaymentReceiptController;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -39,6 +44,11 @@ class AdminPanelProvider extends PanelProvider
                 ['href' => asset('css/oth-order-view.css').'?v='.$version],
             ),
         );
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
+            fn (): string => view('filament.auth.home-link')->render(),
+        );
     }
 
     public function panel(Panel $panel): Panel
@@ -48,6 +58,11 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->profile(EditProfile::class, isSimple: false)
+            ->userMenuItems([
+                'profile' => MenuItem::make()
+                    ->label('My profile'),
+            ])
             ->homeUrl(function (): string {
                 $user = auth()->user();
 
@@ -66,6 +81,16 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->font('Jost')
             ->sidebarCollapsibleOnDesktop()
+            ->navigationGroups([
+                NavigationGroup::make('Store'),
+                NavigationGroup::make('Sales'),
+                NavigationGroup::make('Payments'),
+                NavigationGroup::make('Catalog'),
+                NavigationGroup::make('Products & Inventory'),
+                NavigationGroup::make('Content'),
+                NavigationGroup::make('Administration'),
+                NavigationGroup::make('Settings'),
+            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -94,6 +119,12 @@ class AdminPanelProvider extends PanelProvider
                     ->name('orders.receipt');
                 Route::get('/orders/{order}/payment-proof', [OrderPaymentProofController::class, 'download'])
                     ->name('orders.payment-proof');
+                Route::get('/invoices/{invoice}/print', [InvoicePrintController::class, 'show'])
+                    ->name('invoices.print');
+                Route::get('/invoices/{invoice}/pdf', [InvoicePrintController::class, 'downloadPdf'])
+                    ->name('invoices.pdf');
+                Route::get('/payments/{payment}/receipt', [PaymentReceiptController::class, 'show'])
+                    ->name('payments.receipt');
             });
     }
 }
